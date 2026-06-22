@@ -1,0 +1,58 @@
+.larkup-prose {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: inherit;
+}
+
+.larkup-prose h1,
+.larkup-prose h2,
+.larkup-prose h3,
+.larkup-prose h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.larkup-prose p {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.larkup-prose a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.larkup-prose img {
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+.larkup-prose pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.larkup-prose code {
+  font-size: 0.875em;
+}
+
+.larkup-prose blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 1rem;
+  margin-left: 0;
+  opacity: 0.7;
+}
+
+.larkup-prose ul,
+.larkup-prose ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1em;
+}
+
+.larkup-prose li {
+  margin-bottom: 0.25em;
+}

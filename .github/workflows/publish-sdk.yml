@@ -1,0 +1,35 @@
+name: Publish Blog SDK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/blog-sdk/**'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@larkup'
+
+      - name: Install dependencies
+        working-directory: packages/blog-sdk
+        run: npm install
+
+      - name: Build SDK
+        working-directory: packages/blog-sdk
+        run: npm run build
+
+      - name: Publish to npm
+        working-directory: packages/blog-sdk
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
