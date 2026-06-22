@@ -2,7 +2,7 @@ name: Publish Larkup-Blog SDK
 
 on:
   release:
-    types: [created]
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -11,13 +11,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Debug repository structure
-        run: |
-          pwd
-          ls -la
-          echo "Packages:"
-          ls -la packages || true
 
       - name: Use Node.js
         uses: actions/setup-node@v4
@@ -28,7 +21,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: packages/larkup-blog-sdk
-        run: npm ci
+        run: npm install
 
       - name: Build SDK
         working-directory: packages/larkup-blog-sdk
