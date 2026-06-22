@@ -7,12 +7,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/esm/index.js",
       "require": "./dist/index.js"
     },
     "./react": {
       "types": "./dist/react/index.d.ts",
-      "import": "./dist/react/index.js",
+      "import": "./dist/esm/react/index.js",
       "require": "./dist/react/index.js"
     }
   },
@@ -20,7 +20,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.esm.json",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {

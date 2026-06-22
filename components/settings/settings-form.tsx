@@ -7,6 +7,17 @@ import { Settings } from "@/lib/db/schema";
 import { updateSettings, generateApiKey } from "@/app/actions/settings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function SettingsForm({
   initialSettings,
@@ -36,15 +47,6 @@ export function SettingsForm({
   };
 
   const handleGenerateKey = async () => {
-    if (
-      apiKey &&
-      !confirm(
-        "Are you sure you want to generate a new API Key? This will invalidate the old one.",
-      )
-    ) {
-      return;
-    }
-
     setIsGenerating(true);
     try {
       const newKey = await generateApiKey();
@@ -126,7 +128,6 @@ export function SettingsForm({
                   <Input
                     type={showKey ? "text" : "password"}
                     value={apiKey || "No API key generated yet"}
-                    // readOnly
                     className="pr-10 font-mono"
                     onChange={(e) => setApiKey(e.target.value)}
                   />
@@ -157,18 +158,57 @@ export function SettingsForm({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleGenerateKey}
-              disabled={isGenerating}
-              className="inline-flex items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary/50 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                "Generate New Key"
-              )}
-            </button>
+            {apiKey ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isGenerating}
+                    className="inline-flex items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary/50 disabled:opacity-50"
+                  >
+                    {isGenerating ? (
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      "Generate New Key"
+                    )}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Revoke existing API key?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently revoke your current API key. Any
+                      services or applications using it will lose access
+                      immediately. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleGenerateKey}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Revoke & generate
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <button
+                type="button"
+                onClick={handleGenerateKey}
+                disabled={isGenerating}
+                className="inline-flex items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary/50 disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  "Generate New Key"
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

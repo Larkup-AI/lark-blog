@@ -15,7 +15,7 @@
     "@ai-sdk/react": "^3.0.195",
     "@babel/standalone": "^7.29.7",
     "@hookform/resolvers": "^3.9.1",
-    "@larkup/blog-sdk": "link:../packages/larkup-blog-sdk",
+    "@larkup/blog-sdk": "^0.1.0",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",
     "@radix-ui/react-aspect-ratio": "1.1.8",

@@ -2,7 +2,7 @@ name: Publish Larkup-Blog SDK
 
 on:
   release:
-    types: [published]
+    types: [created]
   workflow_dispatch:
 
 jobs:
@@ -26,6 +26,10 @@ jobs:
       - name: Build SDK
         working-directory: packages/larkup-blog-sdk
         run: npm run build
+
+      - name: Set version from release tag
+        working-directory: packages/larkup-blog-sdk
+        run: npm version ${{ github.event.release.tag_name }} --no-git-tag-version
 
       - name: Publish to npm
         working-directory: packages/larkup-blog-sdk
