@@ -20,15 +20,15 @@ jobs:
           scope: "@larkup"
 
       - name: Install dependencies
-        working-directory: packages/blog-sdk
+        working-directory: packages/larkup-blog-sdk
         run: npm ci
 
       - name: Build SDK
-        working-directory: packages/blog-sdk
+        working-directory: packages/larkup-blog-sdk
         run: npm run build
 
       - name: Publish to npm
-        working-directory: packages/blog-sdk
+        working-directory: packages/larkup-blog-sdk
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
