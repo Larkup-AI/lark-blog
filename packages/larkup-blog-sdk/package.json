@@ -1,18 +1,18 @@
 {
   "name": "@larkup/blog-sdk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "SDK for fetching and rendering posts from Larkup Blog Studio",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/esm/index.js",
+      "import": "./dist/index.js",
       "require": "./dist/index.js"
     },
     "./react": {
       "types": "./dist/react/index.d.ts",
-      "import": "./dist/esm/react/index.js",
+      "import": "./dist/react/index.js",
       "require": "./dist/react/index.js"
     }
   },
@@ -20,7 +20,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.esm.json",
+    "build": "tsc",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
