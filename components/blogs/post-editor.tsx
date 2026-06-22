@@ -215,7 +215,7 @@ export function PostEditor({
   const currentCoverSize = mounted ? coverSize : (post.coverSize ?? "medium");
   const currentShowToc = mounted ? showToc : (post.showToc ?? true);
   const currentShowPreview = mounted ? showPreview : true;
-  const currentLineSpacing = mounted ? lineSpacing : 0.06;
+  const currentLineSpacing = mounted ? lineSpacing : 1.3;
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [coverUploading, setCoverUploading] = useState(false);
   const [pasteUploading, setPasteUploading] = useState(false);

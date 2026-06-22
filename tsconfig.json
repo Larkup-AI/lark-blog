@@ -19,11 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "@larkup/blog-sdk": ["../packages/larkup-blog-sdk/dist/index.d.ts"],
-      "@larkup/blog-sdk/react": [
-        "../packages/larkup-blog-sdk/dist/react/index.d.ts"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [

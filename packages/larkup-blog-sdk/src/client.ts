@@ -7,10 +7,14 @@ export interface Post {
   coverImage?: string;
   category?: string;
   authorName?: string;
+  authorImage?: string;
   readingTime?: number;
   published: boolean;
   publishedAt?: string;
   updatedAt: string;
+  showCover?: boolean;
+  coverSize?: "small" | "medium" | "large";
+  showToc?: boolean;
 }
 
 export interface LarkupBlogOptions {

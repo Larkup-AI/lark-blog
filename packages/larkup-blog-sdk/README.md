@@ -24,7 +24,7 @@ yarn add @larkup/blog-sdk
 import { LarkupBlogClient } from "@larkup/blog-sdk";
 
 const client = new LarkupBlogClient({
-  apiKey: "lk_live_xxxxxxxxxxxx",
+  apiKey: "lk_larkup_xxxxxxxxxxxx",
   studioUrl: "https://your-studio.larkup.io",
 });
 

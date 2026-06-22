@@ -44,23 +44,26 @@ import { count } from "drizzle-orm";
 export async function getPostCounts(authorId?: string) {
   const session = await getSession();
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
-  
-  let query = db.select({ published: posts.published, count: count() }).from(posts).$dynamic()
-  
+
+  let query = db
+    .select({ published: posts.published, count: count() })
+    .from(posts)
+    .$dynamic();
+
   if (authorId) {
-    query = query.where(eq(posts.userId, authorId))
+    query = query.where(eq(posts.userId, authorId));
   }
-  
+
   const allPosts = await query.groupBy(posts.published);
 
   let publishedCount = 0;
   let draftCount = 0;
-  
+
   for (const row of allPosts) {
     if (row.published) publishedCount += Number(row.count);
     else draftCount += Number(row.count);
   }
-  
+
   return {
     total: publishedCount + draftCount,
     publishedCount,
@@ -68,41 +71,48 @@ export async function getPostCounts(authorId?: string) {
   };
 }
 
-export async function getPaginatedPosts(page: number = 1, limit: number = 10, authorId?: string) {
+export async function getPaginatedPosts(
+  page: number = 1,
+  limit: number = 10,
+  authorId?: string,
+) {
   const session = await getSession();
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
-  
+
   const offset = (page - 1) * limit;
-  
-  let query = db.select().from(posts).$dynamic()
-  
+
+  let query = db.select().from(posts).$dynamic();
+
   if (authorId) {
-    query = query.where(eq(posts.userId, authorId))
+    query = query.where(eq(posts.userId, authorId));
   }
-  
-  const data = await query.orderBy(desc(posts.updatedAt)).limit(limit).offset(offset);
-    
+
+  const data = await query
+    .orderBy(desc(posts.updatedAt))
+    .limit(limit)
+    .offset(offset);
+
   return data;
 }
 
 export async function listAllPosts(authorId?: string) {
   const session = await getSession();
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
-  
-  let query = db.select().from(posts).$dynamic()
+
+  let query = db.select().from(posts).$dynamic();
   if (authorId) {
-    query = query.where(eq(posts.userId, authorId))
+    query = query.where(eq(posts.userId, authorId));
   }
-  
+
   return query.orderBy(desc(posts.updatedAt));
 }
 
 export async function getPostById(id: number) {
   const session = await getSession();
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
-  
-  let query = db.select().from(posts).where(eq(posts.id, id)).$dynamic()
-  
+
+  let query = db.select().from(posts).where(eq(posts.id, id)).$dynamic();
+
   const [row] = await query.limit(1);
   return row ?? null;
 }
@@ -110,7 +120,7 @@ export async function getPostById(id: number) {
 export async function createPost() {
   const session = await getSession();
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
-  
+
   const slug = await uniqueSlug(`draft-${Date.now()}`);
   const [row] = await db
     .insert(posts)
@@ -173,14 +183,14 @@ export async function savePost(payload: SavePayload) {
 
   revalidatePath("/");
   revalidatePath(`/blog/${slug}`);
-  revalidatePath("/blog");
+  revalidatePath("/");
   return { slug };
 }
 
 export async function setPublished(id: number, published: boolean) {
   const session = await getSession();
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
-  
+
   const existing = await getPostById(id);
   if (!existing) throw new Error("Not found");
 
@@ -194,7 +204,7 @@ export async function setPublished(id: number, published: boolean) {
     .where(eq(posts.id, id));
 
   revalidatePath("/");
-  revalidatePath("/blog");
+  revalidatePath("/");
   revalidatePath(`/blog/${existing.slug}`);
   revalidatePath("/");
 }
@@ -202,17 +212,15 @@ export async function setPublished(id: number, published: boolean) {
 export async function deletePost(id: number) {
   const session = await getSession();
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
-  
+
   const existing = await getPostById(id);
   if (!existing) throw new Error("Not found");
-  
+
   if (!isFullAdmin(session.user) && existing.userId !== session.user.id) {
     throw new Error("You can only delete your own posts");
   }
 
-  await db
-    .delete(posts)
-    .where(eq(posts.id, id));
+  await db.delete(posts).where(eq(posts.id, id));
   revalidatePath("/");
-  revalidatePath("/blog");
+  revalidatePath("/");
 }

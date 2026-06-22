@@ -459,7 +459,7 @@ export function EditorToolbar({
             <button
               type="button"
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
-              title="Line Spacing"
+              title="Paragraph Spacing"
             >
               <AlignVerticalSpaceAround className="h-4 w-4" />
             </button>
@@ -468,7 +468,7 @@ export function EditorToolbar({
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
-                  Line Spacing
+                  Paragraph Spacing
                 </span>
                 <span className="text-xs font-mono font-semibold tabular-nums text-foreground">
                   {lineSpacing.toFixed(1)}
@@ -506,7 +506,7 @@ export function EditorToolbar({
         <div key="spacing" className="px-2 py-1.5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <AlignVerticalSpaceAround className="h-3.5 w-3.5" /> Line Spacing
+              <AlignVerticalSpaceAround className="h-3.5 w-3.5" /> Paragraph Spacing
             </span>
             <span className="text-xs font-mono font-semibold tabular-nums">
               {lineSpacing.toFixed(1)}

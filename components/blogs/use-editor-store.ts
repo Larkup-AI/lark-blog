@@ -42,7 +42,7 @@ export const useEditorStore = create<EditorState>()(
       showToc: true,
       published: false,
       showPreview: true,
-      lineSpacing: 0.75,
+      lineSpacing: 1.3,
 
       setTitle: (title) => set({ title }),
       setCategory: (category) => set({ category }),
@@ -68,7 +68,6 @@ export const useEditorStore = create<EditorState>()(
           coverSize: post.coverSize ?? "medium",
           showToc: post.showToc ?? true,
           published: post.published,
-          // showPreview and lineSpacing are UX prefs — kept across posts
         });
       },
     }),

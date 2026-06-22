@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 import { ArticleToc } from "@/components/blog/article-toc";
 import { ArticleContent } from "@/components/blog/article-content";
 import { CopyUrlButton } from "@/components/blog/copy-url-button";
@@ -51,7 +50,7 @@ export default async function ArticlePage({
         <header>
           <div className="mx-auto max-w-4xl px-6 pt-10 md:pt-14">
             <Link
-              href="/blog"
+              href="/"
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -173,7 +172,6 @@ export default async function ArticlePage({
         {/* ── Mobile ToC sheet (shown only when showToc && < xl) ────── */}
         {post.showToc && <TocSheet title={post.title} />}
       </main>
-      <SiteFooter />
     </div>
   );
 }

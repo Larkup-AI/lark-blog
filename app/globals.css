@@ -172,10 +172,10 @@
 @layer components {
   .prose-editorial {
     @apply text-[1.0625rem] text-foreground/90;
-    line-height: var(--line-spacing, 1.75);
+    line-height: 1.75;
   }
   .prose-editorial > * + * {
-    margin-top: calc(var(--line-spacing, 1.75) * 0.85rem);
+    margin-top: calc(var(--line-spacing, 1.3) * 0.85rem);
   }
   .prose-editorial > :first-child {
     margin-top: 0;

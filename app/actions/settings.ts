@@ -48,7 +48,7 @@ export async function generateApiKey() {
   const userId = await getAdminUserId();
   if (!userId) throw new Error("Unauthorized");
 
-  const newKey = "sk_larkup_" + randomBytes(24).toString("hex");
+  const newKey = "lk_larkup_" + randomBytes(24).toString("hex");
 
   await db
     .update(settings)
