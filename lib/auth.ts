@@ -6,11 +6,9 @@ export const auth = betterAuth({
   database: pool,
   baseURL:
     process.env.BETTER_AUTH_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000"),
+    (process.env.VERCEL
+      ? "https://blog-studio.larkup.de"
+      : "http://localhost:3000"),
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
@@ -78,6 +76,7 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [
+    "https://blog-studio.larkup.de",
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
