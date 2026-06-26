@@ -1038,14 +1038,51 @@ export function PostEditor({
                   </div>
 
                   {/* Category */}
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Category</label>
-                    <Input
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      placeholder="Category (e.g. Research)"
-                    />
-                  </div>
+                  {(() => {
+                    const PRESET_CATEGORIES = [
+                      "Engineering",
+                      "Research",
+                      "Product",
+                      "Education",
+                      "Tutorials",
+                    ];
+                    const isCustom =
+                      !!category &&
+                      !PRESET_CATEGORIES.includes(category);
+                    const selectValue = isCustom ? "__custom__" : (category ?? "");
+                    return (
+                      <div className="grid gap-2">
+                        <label className="text-sm font-medium">Category</label>
+                        <select
+                          value={selectValue}
+                          onChange={(e) => {
+                            if (e.target.value === "__custom__") {
+                              setCategory("");
+                            } else {
+                              setCategory(e.target.value);
+                            }
+                          }}
+                          className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                          <option value="">None</option>
+                          {PRESET_CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                          <option value="__custom__">Custom…</option>
+                        </select>
+                        {(selectValue === "__custom__" || isCustom) && (
+                          <Input
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            placeholder="Enter custom category"
+                            autoFocus
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Cover image section */}
                   <div className="grid gap-3">
