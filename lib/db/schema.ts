@@ -92,6 +92,7 @@ export const posts = pgTable("posts", {
   category: text("category"),
   authorName: text("authorName"),
   published: boolean("published").notNull().default(false),
+  isMain: boolean("isMain").notNull().default(false),
   showToc: boolean("showToc").notNull().default(true),
   readingTime: integer("readingTime"),
   publishedAt: timestamp("publishedAt"),
