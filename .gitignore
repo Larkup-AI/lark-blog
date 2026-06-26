@@ -13,3 +13,4 @@ migrate.log
 app/tests
 .vercel
 .env*
+dist
