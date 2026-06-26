@@ -37,9 +37,9 @@ export const DEFAULT_STYLES = `
 .hljs-comment, .hljs-quote, .hljs-deletion { color: #7f848e; font-style: italic; }
 
 /* ── Article layout ───────────────────────────────────────────────────── */
-.larkup-layout { --larkup-max-width: 56rem; font-family: ui-sans-serif, system-ui, sans-serif; color: #111827; width: 100%; }
+.larkup-layout { --larkup-max-width: 56rem; font-family: ui-sans-serif, system-ui, sans-serif; color: #111827; width: 100%; padding: 0 1.5rem; box-sizing: border-box; }
 
-.larkup-header-wrapper { max-width: var(--larkup-max-width); margin: 0 auto; padding: 2.5rem 1.5rem 0; text-align: center; }
+.larkup-header-wrapper { max-width: var(--larkup-max-width); margin: 0 auto; padding: 2.5rem 0 0; text-align: center; }
 @media (min-width: 768px) { .larkup-header-wrapper { padding-top: 3.5rem; } }
 
 .larkup-category { font-size: 0.875rem; color: #6b7280; display: block; margin-bottom: 1rem; }
@@ -60,15 +60,15 @@ export const DEFAULT_STYLES = `
 
 /* ── Cover image ──────────────────────────────────────────────────────── */
 .larkup-cover-section { }
-.larkup-cover-inner   { max-width: var(--larkup-max-width); margin: 0 auto; padding: 2.5rem 1.5rem; }
+.larkup-cover-inner   { max-width: var(--larkup-max-width); margin: 0 auto; padding: 2.5rem 0; }
 .larkup-cover          { width: 100%; border-radius: 0.75rem; object-fit: cover; }
 .larkup-cover-small    { aspect-ratio: 3/1; }
 .larkup-cover-medium   { aspect-ratio: 2/1; }
 .larkup-cover-large    { aspect-ratio: 16/10; }
 
 /* ── Body + sidebar ───────────────────────────────────────────────────── */
-.larkup-body-layout     { display: flex; justify-content: center; gap: 2rem; padding: 2.5rem 1.5rem; }
-@media (min-width: 768px) { .larkup-body-layout { padding-top: 2.5rem; padding-bottom: 3.5rem; } }
+.larkup-body-layout     { display: flex; justify-content: center; gap: 2rem; padding: 2.5rem 0; }
+@media (min-width: 768px) { .larkup-body-layout { padding-bottom: 3.5rem; } }
 .larkup-spacer          { display: none; width: 13rem; flex-shrink: 0; }
 .larkup-article-content { min-width: 0; width: 100%; max-width: var(--larkup-max-width); }
 .larkup-sidebar         { display: none; width: 13rem; flex-shrink: 0; }

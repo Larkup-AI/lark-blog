@@ -1,6 +1,6 @@
 {
   "name": "@larkup/blog-sdk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "SDK for fetching and rendering posts from Larkup Blog Studio",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
