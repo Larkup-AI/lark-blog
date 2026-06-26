@@ -247,13 +247,14 @@ function LarkupMobileToc({ contentRef, }) {
                     .join(" "), role: "dialog", "aria-modal": "true", "aria-label": "Table of contents", children: [(0, jsx_runtime_1.jsx)("button", { type: "button", className: "larkup-mobile-toc-close", onClick: () => setOpen(false), "aria-label": "Close", children: "\u2715" }), (0, jsx_runtime_1.jsx)("p", { className: "larkup-mobile-toc-heading", children: "On this page" }), (0, jsx_runtime_1.jsx)(LarkupToc, { contentRef: contentRef, onNavigate: () => setOpen(false) })] })] }));
 }
 function LarkupArticle(_a) {
-    var { className, style, prose = true, renderLoading, renderError, showHeader = true, showAuthor = true, showReadingTime = true, showDate = true, showCategory = true, showCover = true, showToc = true, classNames = {} } = _a, rest = __rest(_a, ["className", "style", "prose", "renderLoading", "renderError", "showHeader", "showAuthor", "showReadingTime", "showDate", "showCategory", "showCover", "showToc", "classNames"]);
+    var { className, style, prose = true, renderLoading, renderError, showHeader = true, showAuthor = true, showAuthorImage = true, showReadingTime = true, showDate = true, showCategory = true, showCover = true, showToc = true, classNames = {} } = _a, rest = __rest(_a, ["className", "style", "prose", "renderLoading", "renderError", "showHeader", "showAuthor", "showAuthorImage", "showReadingTime", "showDate", "showCategory", "showCover", "showToc", "classNames"]);
     const baseProps = {
         className,
         style,
         prose,
         showHeader,
         showAuthor,
+        showAuthorImage,
         showReadingTime,
         showDate,
         showCategory,
@@ -279,7 +280,7 @@ function FetchingArticle(_a) {
         return null;
     return (0, jsx_runtime_1.jsx)(ArticleView, Object.assign({ post: post }, viewProps));
 }
-function ArticleView({ post, className, style, prose, showHeader, showAuthor, showReadingTime, showDate, showCategory, showCover, showToc, classNames = {}, }) {
+function ArticleView({ post, className, style, prose, showHeader, showAuthor, showAuthorImage, showReadingTime, showDate, showCategory, showCover, showToc, classNames = {}, }) {
     var _a, _b, _c;
     const contentRef = (0, react_1.useRef)(null);
     const finalShowCover = showCover && ((_a = post.showCover) !== null && _a !== void 0 ? _a : true);
@@ -291,7 +292,7 @@ function ArticleView({ post, className, style, prose, showHeader, showAuthor, sh
                     .filter(Boolean)
                     .join(" "), children: [showCategory && ((0, jsx_runtime_1.jsxs)("span", { className: "larkup-category", children: ["Blog", post.category ? ` / ${post.category}` : ""] })), (0, jsx_runtime_1.jsx)("h1", { className: ["larkup-title", classNames.title]
                             .filter(Boolean)
-                            .join(" "), children: post.title }), showAuthor && ((0, jsx_runtime_1.jsxs)("div", { className: "larkup-author-wrapper", children: [post.authorImage ? ((0, jsx_runtime_1.jsx)("img", { src: post.authorImage, alt: author, className: "larkup-author-avatar" })) : ((0, jsx_runtime_1.jsx)("span", { className: "larkup-author-initial", "aria-hidden": "true", children: author.charAt(0).toUpperCase() })), (0, jsx_runtime_1.jsx)("span", { className: "larkup-author-name", children: author })] })), (0, jsx_runtime_1.jsxs)("div", { className: ["larkup-meta-row", classNames.metaContainer]
+                            .join(" "), children: post.title }), showAuthor && ((0, jsx_runtime_1.jsxs)("div", { className: "larkup-author-wrapper", children: [showAuthorImage && post.authorImage ? ((0, jsx_runtime_1.jsx)("img", { src: post.authorImage, alt: author, className: "larkup-author-avatar" })) : ((0, jsx_runtime_1.jsx)("span", { className: "larkup-author-initial", "aria-hidden": "true", children: author.charAt(0).toUpperCase() })), (0, jsx_runtime_1.jsx)("span", { className: "larkup-author-name", children: author })] })), (0, jsx_runtime_1.jsxs)("div", { className: ["larkup-meta-row", classNames.metaContainer]
                             .filter(Boolean)
                             .join(" "), children: [(0, jsx_runtime_1.jsx)("div", { className: "larkup-meta-left", children: showReadingTime && post.readingTime != null && ((0, jsx_runtime_1.jsxs)("span", { className: ["larkup-meta-item", classNames.metaItem]
                                         .filter(Boolean)

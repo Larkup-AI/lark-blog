@@ -148,6 +148,7 @@ Renders a full article. Accepts either a pre-fetched `post` object or a `slug` t
 | `post`          | `Post`                      | —       | Pre-fetched post object (mutually exclusive with `slug`)     |
 | `preview`       | `boolean`                   | `false` | Fetch draft version (only valid with `slug`)                 |
 | `prose`         | `boolean`                   | `true`  | Adds `larkup-prose` class to the content `<div>` for styling |
+| `showAuthorImage` | `boolean`                 | `true`  | Whether to show the author's profile image (if available)    |
 | `className`     | `string`                    | —       | Applied to the outer `<article>` element                     |
 | `style`         | `CSSProperties`             | —       | Inline styles for the outer `<article>` element              |
 | `renderLoading` | `() => ReactNode`           | —       | Custom loading state                                         |

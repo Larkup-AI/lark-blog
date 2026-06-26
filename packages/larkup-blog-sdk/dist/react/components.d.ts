@@ -17,6 +17,7 @@ interface BaseProps {
     renderError?: (err: Error) => React.ReactNode;
     showHeader?: boolean;
     showAuthor?: boolean;
+    showAuthorImage?: boolean;
     showReadingTime?: boolean;
     showDate?: boolean;
     showCategory?: boolean;
@@ -33,6 +34,6 @@ type LarkupArticleProps = (BaseProps & {
     slug?: never;
     preview?: never;
 });
-export declare function LarkupArticle({ className, style, prose, renderLoading, renderError, showHeader, showAuthor, showReadingTime, showDate, showCategory, showCover, showToc, classNames, ...rest }: LarkupArticleProps): React.JSX.Element;
+export declare function LarkupArticle({ className, style, prose, renderLoading, renderError, showHeader, showAuthor, showAuthorImage, showReadingTime, showDate, showCategory, showCover, showToc, classNames, ...rest }: LarkupArticleProps): React.JSX.Element;
 export {};
 //# sourceMappingURL=components.d.ts.map

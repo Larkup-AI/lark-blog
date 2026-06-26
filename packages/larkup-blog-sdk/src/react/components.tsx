@@ -349,6 +349,7 @@ interface BaseProps {
 
   showHeader?: boolean;
   showAuthor?: boolean;
+  showAuthorImage?: boolean;
   showReadingTime?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
@@ -369,6 +370,7 @@ export function LarkupArticle({
   renderError,
   showHeader = true,
   showAuthor = true,
+  showAuthorImage = true,
   showReadingTime = true,
   showDate = true,
   showCategory = true,
@@ -383,6 +385,7 @@ export function LarkupArticle({
     prose,
     showHeader,
     showAuthor,
+    showAuthorImage,
     showReadingTime,
     showDate,
     showCategory,
@@ -456,6 +459,7 @@ function ArticleView({
   prose,
   showHeader,
   showAuthor,
+  showAuthorImage,
   showReadingTime,
   showDate,
   showCategory,
@@ -500,7 +504,7 @@ function ArticleView({
 
           {showAuthor && (
             <div className="larkup-author-wrapper">
-              {post.authorImage ? (
+              {showAuthorImage && post.authorImage ? (
                 <img
                   src={post.authorImage}
                   alt={author}
