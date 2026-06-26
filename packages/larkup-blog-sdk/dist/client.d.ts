@@ -14,6 +14,10 @@ export interface Post {
     updatedAt: string;
     showCover?: boolean;
     coverSize?: "small" | "medium" | "large";
+    coverFit?: "cover" | "contain";
+    coverZoom?: number;
+    coverX?: number;
+    coverY?: number;
     showToc?: boolean;
 }
 export interface LarkupBlogOptions {

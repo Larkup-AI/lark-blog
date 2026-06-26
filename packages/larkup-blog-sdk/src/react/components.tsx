@@ -48,9 +48,9 @@ const DEFAULT_STYLES = `
 .larkup-meta-left { display: flex; align-items: center; gap: 1rem; }
 .larkup-meta-item { display: flex; align-items: center; gap: 0.375rem; }
 
-.larkup-cover-section { border-bottom: 1px solid #e5e7eb; }
+.larkup-cover-section { }
 .larkup-cover-inner { max-width: 56rem; margin: 0 auto; padding: 2.5rem 1.5rem; }
-.larkup-cover { width: 100%; border-radius: 0.75rem; border: 1px solid #e5e7eb; object-fit: cover; }
+.larkup-cover { width: 100%; border-radius: 0.75rem; object-fit: cover; }
 .larkup-cover-small { aspect-ratio: 3/1; }
 .larkup-cover-medium { aspect-ratio: 2/1; }
 .larkup-cover-large { aspect-ratio: 16/10; }
@@ -98,8 +98,8 @@ const DEFAULT_STYLES = `
   .larkup-author-initial { background-color: #f9fafb; color: #111827; }
   .larkup-author-name { color: #f9fafb; }
   .larkup-meta-row { border-color: #374151; color: #9ca3af; }
-  .larkup-cover-section { border-color: #374151; }
-  .larkup-cover { border-color: #374151; }
+  .larkup-cover-section { }
+  .larkup-cover { }
   .larkup-toc-title { color: #9ca3af; }
   .larkup-toc-list { border-color: #374151; }
   .larkup-toc-link { color: #9ca3af; }
@@ -564,19 +564,34 @@ function ArticleView({
       {finalShowCover && post.coverImage && (
         <div className="larkup-cover-section">
           <div className="larkup-cover-inner">
-            <img
-              src={post.coverImage}
-              alt={post.title}
+            <div
               className={[
-                "larkup-cover",
-                post.coverSize
+                post.coverFit === "cover" && post.coverSize
                   ? `larkup-cover-${post.coverSize}`
-                  : "larkup-cover-large",
-                classNames.coverImage,
+                  : post.coverFit === "cover"
+                    ? "larkup-cover-large"
+                    : undefined,
               ]
                 .filter(Boolean)
                 .join(" ")}
-            />
+              style={{ overflow: "hidden", borderRadius: "0.75rem", width: "100%" }}
+            >
+              <img
+                src={post.coverImage}
+                alt={post.title}
+                className={["larkup-cover", classNames.coverImage]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={{
+                  width: "100%",
+                  height: post.coverFit === "contain" ? "auto" : "100%",
+                  objectFit: post.coverFit === "contain" ? "contain" : "cover",
+                  objectPosition: `${post.coverX ?? 50}% ${post.coverY ?? 50}%`,
+                  transform: `scale(${post.coverZoom ?? 1})`,
+                  transformOrigin: `${post.coverX ?? 50}% ${post.coverY ?? 50}%`,
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

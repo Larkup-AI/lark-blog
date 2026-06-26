@@ -11,6 +11,9 @@ export interface EditorState {
   showCover: boolean;
   coverSize: string;
   coverFit: string;
+  coverZoom: number;
+  coverX: number;
+  coverY: number;
   showToc: boolean;
   published: boolean;
   showPreview: boolean;
@@ -23,6 +26,9 @@ export interface EditorState {
   setShowCover: (show: boolean) => void;
   setCoverSize: (size: string) => void;
   setCoverFit: (fit: string) => void;
+  setCoverZoom: (zoom: number) => void;
+  setCoverX: (x: number) => void;
+  setCoverY: (y: number) => void;
   setShowToc: (show: boolean) => void;
   setPublished: (published: boolean) => void;
   setShowPreview: (show: boolean) => void;
@@ -41,7 +47,10 @@ export const useEditorStore = create<EditorState>()(
       coverImage: null,
       showCover: false,
       coverSize: "medium",
-      coverFit: "cover",
+      coverFit: "contain",
+      coverZoom: 1,
+      coverX: 50,
+      coverY: 50,
       showToc: true,
       published: false,
       showPreview: true,
@@ -54,6 +63,9 @@ export const useEditorStore = create<EditorState>()(
       setShowCover: (showCover) => set({ showCover }),
       setCoverSize: (coverSize) => set({ coverSize }),
       setCoverFit: (coverFit) => set({ coverFit }),
+      setCoverZoom: (coverZoom) => set({ coverZoom }),
+      setCoverX: (coverX) => set({ coverX }),
+      setCoverY: (coverY) => set({ coverY }),
       setShowToc: (showToc) => set({ showToc }),
       setPublished: (published) => set({ published }),
       setShowPreview: (showPreview) => set({ showPreview }),
@@ -70,7 +82,10 @@ export const useEditorStore = create<EditorState>()(
           coverImage: post.coverImage,
           showCover: post.showCover ?? false,
           coverSize: post.coverSize ?? "medium",
-          coverFit: post.coverFit ?? "cover",
+          coverFit: post.coverFit ?? "contain",
+          coverZoom: post.coverZoom ?? 1,
+          coverX: post.coverX ?? 50,
+          coverY: post.coverY ?? 50,
           showToc: post.showToc ?? true,
           published: post.published,
         });

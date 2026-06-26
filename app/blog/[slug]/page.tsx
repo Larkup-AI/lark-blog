@@ -106,19 +106,30 @@ export default async function ArticlePage({
 
         {/* ── Cover image ────────────────────────────────────────────── */}
         {post.showCover && post.coverImage && (
-          <div className="border-b border-border">
+          <div>
             <div className="mx-auto max-w-4xl px-6 py-10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={post.coverImage || "/placeholder.svg"}
-                alt=""
+              <div
                 className={cn(
-                  "w-full rounded-xl border border-border object-cover",
-                  post.coverSize === "small" && "aspect-3/1",
-                  post.coverSize === "medium" && "aspect-2/1",
-                  post.coverSize === "large" && "aspect-16/10",
+                  "w-full overflow-hidden rounded-xl",
+                  post.coverFit === "cover" && post.coverSize === "small" && "aspect-[3/1]",
+                  post.coverFit === "cover" && post.coverSize === "medium" && "aspect-[2/1]",
+                  post.coverFit === "cover" && post.coverSize === "large" && "aspect-[16/10]",
                 )}
-              />
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={post.coverImage || "/placeholder.svg"}
+                  alt="Cover"
+                  style={{
+                    width: "100%",
+                    height: post.coverFit === "contain" ? "auto" : "100%",
+                    objectFit: post.coverFit === "contain" ? "contain" : "cover",
+                    objectPosition: `${post.coverX ?? 50}% ${post.coverY ?? 50}%`,
+                    transform: `scale(${post.coverZoom ?? 1})`,
+                    transformOrigin: `${post.coverX ?? 50}% ${post.coverY ?? 50}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}

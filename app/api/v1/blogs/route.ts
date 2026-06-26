@@ -44,12 +44,19 @@ export async function GET(req: Request) {
         title: posts.title,
         slug: posts.slug,
         coverImage: posts.coverImage,
+        showCover: posts.showCover,
+        coverSize: posts.coverSize,
+        coverFit: posts.coverFit,
+        coverZoom: posts.coverZoom,
+        coverX: posts.coverX,
+        coverY: posts.coverY,
         category: posts.category,
         authorName: posts.authorName,
         readingTime: posts.readingTime,
         published: posts.published,
         publishedAt: posts.publishedAt,
         updatedAt: posts.updatedAt,
+        showToc: posts.showToc,
       })
       .from(posts)
       .where(queryConditions)

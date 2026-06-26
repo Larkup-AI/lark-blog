@@ -6,6 +6,7 @@ import {
   serial,
   integer,
   jsonb,
+  real,
 } from "drizzle-orm/pg-core";
 
 /* ----------------------------- Better Auth tables ----------------------------- */
@@ -84,7 +85,10 @@ export const posts = pgTable("posts", {
   coverImage: text("coverImage"),
   showCover: boolean("showCover").notNull().default(false),
   coverSize: text("coverSize").notNull().default("medium"),
-  coverFit: text("coverFit").notNull().default("cover"),
+  coverFit: text("coverFit").notNull().default("contain"),
+  coverZoom: real("coverZoom").default(1),
+  coverX: integer("coverX").default(50),
+  coverY: integer("coverY").default(50),
   category: text("category"),
   authorName: text("authorName"),
   published: boolean("published").notNull().default(false),

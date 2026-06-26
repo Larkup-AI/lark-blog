@@ -31,6 +31,8 @@ import {
   Globe,
   SettingsIcon,
   MoreHorizontal,
+  ZoomIn,
+  Move,
 } from "lucide-react";
 import { toast } from "sonner";
 import { EditorToolbar } from "@/components/blogs/editor-toolbar";
@@ -90,14 +92,92 @@ import { Settings } from "@/lib/db/schema";
 
 type SaveState = "idle" | "saving" | "saved";
 
+// ─── Cover image helper ────────────────────────────────────────────────────────
 /**
- * Downscale + recompress a pasted/dropped image on the client before upload.
- * Large screenshots (often 3–6 MB PNGs) become small JP/PNGs, so the network
- * round-trip — the part that actually feels slow — finishes far faster.
- * Falls back to the original file if anything goes wrong.
+ * Renders a cover image with zoom + pan support.
+ * - `fit`  → "cover" | "contain"
+ * - `zoom` → 1–3 multiplier applied via transform: scale()
+ * - `x/y`  → 0–100 percent, drives both object-position and transformOrigin
+ *            so the zoom anchor matches the visible crop point.
  */
+function CoverPreview({
+  src,
+  fit,
+  zoom = 1,
+  x = 50,
+  y = 50,
+  className,
+}: {
+  src: string | null;
+  fit: string;
+  zoom?: number;
+  x?: number;
+  y?: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn("overflow-hidden", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src || "/placeholder.svg"}
+        alt="Cover"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: fit === "contain" ? "contain" : "cover",
+          objectPosition: `${x}% ${y}%`,
+          transform: `scale(${zoom})`,
+          transformOrigin: `${x}% ${y}%`,
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── Slider helper ─────────────────────────────────────────────────────────────
+function ControlSlider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  display,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  display: string;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="grid gap-1.5">
+      <div className="flex items-center justify-between">
+        <label className="text-xs text-muted-foreground">{label}</label>
+        <span className="text-xs font-mono text-muted-foreground">
+          {display}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full accent-foreground disabled:opacity-40 cursor-pointer"
+      />
+    </div>
+  );
+}
+
+// ─── Image utilities ───────────────────────────────────────────────────────────
 async function compressImage(file: File, maxDim = 1920): Promise<File> {
-  // Skip vectors/gifs (animation) — only raster photos/screenshots benefit.
   if (file.type === "image/svg+xml" || file.type === "image/gif") return file;
   try {
     const bitmap = await createImageBitmap(file);
@@ -111,7 +191,6 @@ async function compressImage(file: File, maxDim = 1920): Promise<File> {
     if (!ctx) return file;
     ctx.drawImage(bitmap, 0, 0, w, h);
     bitmap.close?.();
-    // Keep PNG for transparency, otherwise JPEG at high quality.
     const hasAlpha = file.type === "image/png";
     const mime = hasAlpha ? "image/png" : "image/jpeg";
     const blob: Blob | null = await new Promise((resolve) =>
@@ -126,7 +205,6 @@ async function compressImage(file: File, maxDim = 1920): Promise<File> {
   }
 }
 
-/** Replace every image node whose src matches `from` with `to` (optimistic upload). */
 function replaceImageSrc(editor: Editor, from: string, to: string) {
   const { state, view } = editor;
   let tr = state.tr;
@@ -140,12 +218,10 @@ function replaceImageSrc(editor: Editor, from: string, to: string) {
   if (changed) view.dispatch(tr.setMeta("addToHistory", false));
 }
 
-/** Remove every image node whose src matches `src` (used when an upload fails). */
 function removeImageBySrc(editor: Editor, src: string) {
   const { state, view } = editor;
   let tr = state.tr;
   let changed = false;
-  // Walk backwards so positions stay valid as we delete.
   const targets: Array<{ from: number; size: number }> = [];
   state.doc.descendants((node, pos) => {
     if (node.type.name === "image" && node.attrs.src === src) {
@@ -159,6 +235,7 @@ function removeImageBySrc(editor: Editor, src: string) {
   if (changed) view.dispatch(tr.setMeta("addToHistory", false));
 }
 
+// ─── Main component ────────────────────────────────────────────────────────────
 export function PostEditor({
   post,
   settings,
@@ -184,6 +261,13 @@ export function PostEditor({
     setCoverSize,
     coverFit,
     setCoverFit,
+    // NEW: zoom + pan
+    coverZoom,
+    setCoverZoom,
+    coverX,
+    setCoverX,
+    coverY,
+    setCoverY,
     showToc,
     setShowToc,
     published,
@@ -202,7 +286,7 @@ export function PostEditor({
     initialize(post, session?.user?.name);
   }, [post, session?.user?.name, initialize]);
 
-  // Use local fallback during SSR to avoid hydration mismatch, then switch to store
+  // SSR-safe fallbacks
   const currentTitle = mounted
     ? title
     : post.title === "Untitled"
@@ -215,10 +299,14 @@ export function PostEditor({
   const currentCoverImage = mounted ? coverImage : post.coverImage;
   const currentShowCover = mounted ? showCover : (post.showCover ?? false);
   const currentCoverSize = mounted ? coverSize : (post.coverSize ?? "medium");
-  const currentCoverFit = mounted ? coverFit : (post.coverFit ?? "cover");
+  const currentCoverFit = mounted ? coverFit : (post.coverFit ?? "contain");
+  const currentCoverZoom = mounted ? coverZoom : (post.coverZoom ?? 1);
+  const currentCoverX = mounted ? coverX : (post.coverX ?? 50);
+  const currentCoverY = mounted ? coverY : (post.coverY ?? 50);
   const currentShowToc = mounted ? showToc : (post.showToc ?? true);
   const currentShowPreview = mounted ? showPreview : true;
   const currentLineSpacing = mounted ? lineSpacing : 1.3;
+
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [coverUploading, setCoverUploading] = useState(false);
   const [pasteUploading, setPasteUploading] = useState(false);
@@ -232,15 +320,10 @@ export function PostEditor({
   const dirtyRef = useRef(false);
   const coverInput = useRef<HTMLInputElement>(null);
   const editorRef = useRef<Editor | null>(null);
-  // Tracks uploads that are still in flight. Saving is blocked while > 0 so the
-  // autosave never strips a temporary blob: image before its upload finishes.
   const inFlightUploadsRef = useRef(0);
 
   const { startUpload } = useUploadThing("imageUploader");
 
-  // Optimistic upload: insert the image immediately from a local blob URL, then
-  // swap in the uploaded URL when it lands. Reads from a ref so the editorProps
-  // closures always reach the live editor + upload fn.
   const uploadRef = useRef<(files: File[], pos?: number) => void>(() => {});
   uploadRef.current = async (files, pos) => {
     const ed = editorRef.current;
@@ -265,8 +348,6 @@ export function PostEditor({
         if (url) {
           replaceImageSrc(ed, tempUrl, url);
         } else {
-          // Upload returned nothing — drop the temp image so we never persist a
-          // blob: URL (which renders in this tab but is broken everywhere else).
           removeImageBySrc(ed, tempUrl);
           toast.error("Image upload failed", {
             description:
@@ -286,7 +367,6 @@ export function PostEditor({
         );
         setPasteUploading(inFlightUploadsRef.current > 0);
         URL.revokeObjectURL(tempUrl);
-        // Upload settled — nudge a save so the now-final src gets persisted.
         dirtyRef.current = true;
         setDocVersion((v) => v + 1);
       }
@@ -370,14 +450,10 @@ export function PostEditor({
 
   const doSave = useCallback(async () => {
     if (!editor) return;
-    // Don't save while an image is still uploading. The blob: src is temporary;
-    // saving now would strip it. We leave the doc dirty so the save re-runs once
-    // the upload finishes (it bumps docVersion in its finally block).
     if (inFlightUploadsRef.current > 0) {
       dirtyRef.current = true;
       return;
     }
-    // Never persist temporary blob: image URLs — they break outside this tab.
     const blobSrcs: string[] = [];
     editor.state.doc.descendants((node) => {
       if (
@@ -406,6 +482,9 @@ export function PostEditor({
         showCover,
         coverSize,
         coverFit,
+        coverZoom,
+        coverX,
+        coverY,
         showToc,
         content: editor.getJSON(),
         contentHtml: editor.getHTML(),
@@ -428,6 +507,9 @@ export function PostEditor({
     showCover,
     coverSize,
     coverFit,
+    coverZoom,
+    coverX,
+    coverY,
     showToc,
   ]);
 
@@ -436,30 +518,21 @@ export function PostEditor({
     doSaveRef.current = doSave;
   }, [doSave]);
 
-  // Save on unmount or window blur
   useEffect(() => {
     const handleBlur = () => {
-      if (dirtyRef.current) {
-        doSaveRef.current();
-      }
+      if (dirtyRef.current) doSaveRef.current();
     };
     window.addEventListener("blur", handleBlur);
-
     return () => {
       window.removeEventListener("blur", handleBlur);
-      if (dirtyRef.current) {
-        doSaveRef.current();
-      }
+      if (dirtyRef.current) doSaveRef.current();
     };
   }, []);
 
-  // Debounced autosave.
   useEffect(() => {
     if (!editor) return;
     const timer = setTimeout(() => {
-      if (dirtyRef.current) {
-        doSave();
-      }
+      if (dirtyRef.current) doSave();
     }, 1500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -471,13 +544,28 @@ export function PostEditor({
     showCover,
     coverSize,
     coverFit,
+    coverZoom,
+    coverX,
+    coverY,
     showToc,
     docVersion,
   ]);
 
   useEffect(() => {
     dirtyRef.current = true;
-  }, [title, category, authorName, coverImage, showCover, coverSize, coverFit, showToc]);
+  }, [
+    title,
+    category,
+    authorName,
+    coverImage,
+    showCover,
+    coverSize,
+    coverFit,
+    coverZoom,
+    coverX,
+    coverY,
+    showToc,
+  ]);
 
   const onCoverPick = async (file: File) => {
     setCoverUploading(true);
@@ -489,6 +577,10 @@ export function PostEditor({
       if (url) {
         setCoverImage(url);
         setShowCover(true);
+        // Reset zoom/pan on new image upload
+        setCoverZoom(1);
+        setCoverX(50);
+        setCoverY(50);
         toast.success("Cover image uploaded");
       } else {
         toast.error("Cover upload failed", {
@@ -523,6 +615,13 @@ export function PostEditor({
 
   const busy = saveState === "saving" || pasteUploading;
 
+  // Shared aspect-ratio classes for the cover based on size setting
+  const coverAspectClass = cn(
+    currentCoverSize === "small" && "aspect-[3/1]",
+    currentCoverSize === "medium" && "aspect-[2/1]",
+    currentCoverSize === "large" && "aspect-[16/10]",
+  );
+
   return (
     <div className="h-svh flex flex-col overflow-hidden bg-background">
       <input
@@ -536,6 +635,8 @@ export function PostEditor({
           e.target.value = "";
         }}
       />
+
+      {/* ── Top bar ── */}
       <div className="sticky top-0 z-30 bg-background border-b border-border/10">
         <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-4 flex-1">
@@ -551,9 +652,10 @@ export function PostEditor({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Post title"
-              className="max-w-md placeholder:text-muted-foreground/50 placeholder:text-[14px] border-border/60  bg-muted focus-visible:ring-0 text-foreground font-medium px-2 h-8 text-base"
+              className="max-w-md placeholder:text-muted-foreground/50 placeholder:text-[14px] border-border/60 bg-muted focus-visible:ring-0 text-foreground font-medium px-2 h-8 text-base"
             />
 
+            {/* Cover image popover */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -567,21 +669,30 @@ export function PostEditor({
               </PopoverTrigger>
               <PopoverContent className="w-80 bg-background" align="start">
                 <Tabs defaultValue="upload" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 h-7.5 ">
+                  <TabsList className="grid w-full grid-cols-2 h-7.5">
                     <TabsTrigger value="upload">Upload</TabsTrigger>
                     <TabsTrigger value="link">Link</TabsTrigger>
                   </TabsList>
+
+                  {/* Upload tab */}
                   <TabsContent
                     value="upload"
                     className="pt-4 flex flex-col gap-4"
                   >
-                    {coverImage && (
-                      <div className="relative aspect-video w-full overflow-hidden rounded-md border border-border">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                    <>
+                      <div
+                        className={cn(
+                          "relative w-full overflow-hidden rounded-md border border-border",
+                          coverAspectClass,
+                        )}
+                      >
+                        <CoverPreview
                           src={coverImage}
-                          alt="Cover"
-                          className={cn("h-full w-full", coverFit === "contain" ? "object-contain bg-muted/20" : "object-cover")}
+                          fit={coverFit}
+                          zoom={coverZoom}
+                          x={coverX}
+                          y={coverY}
+                          className="h-full w-full"
                         />
                         <Button
                           size="icon"
@@ -595,7 +706,61 @@ export function PostEditor({
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
-                    )}
+                      {/* ── Zoom + Pan sliders ── */}
+                      <div className="rounded-lg border border-border bg-muted/30 p-3 flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Zoom &amp; Position
+                          </p>
+                          <select
+                            value={coverFit}
+                            onChange={(e) => setCoverFit(e.target.value)}
+                            className="h-6 rounded-md border border-border bg-background px-1.5 text-[10px] text-muted-foreground focus:ring-0"
+                          >
+                            <option value="cover">Cover</option>
+                            <option value="contain">Contain</option>
+                          </select>
+                        </div>
+                        <ControlSlider
+                          label="Zoom"
+                          value={coverZoom}
+                          min={1}
+                          max={3}
+                          step={0.05}
+                          display={`${Math.round(coverZoom * 100)}%`}
+                          onChange={setCoverZoom}
+                        />
+                        <ControlSlider
+                          label="Horizontal"
+                          value={coverX}
+                          min={0}
+                          max={100}
+                          step={1}
+                          display={`${coverX}%`}
+                          onChange={setCoverX}
+                        />
+                        <ControlSlider
+                          label="Vertical"
+                          value={coverY}
+                          min={0}
+                          max={100}
+                          step={1}
+                          display={`${coverY}%`}
+                          onChange={setCoverY}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCoverZoom(1);
+                            setCoverX(50);
+                            setCoverY(50);
+                          }}
+                          className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline hover:text-foreground"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </>
                     <div className="flex items-center gap-2">
                       <Button
                         type="button"
@@ -629,6 +794,8 @@ export function PostEditor({
                       )}
                     </div>
                   </TabsContent>
+
+                  {/* Link tab */}
                   <TabsContent
                     value="link"
                     className="pt-4 flex flex-col gap-4"
@@ -644,27 +811,85 @@ export function PostEditor({
                       />
                     </div>
                     {coverImage && (
-                      <div className="relative aspect-video w-full overflow-hidden rounded-md border border-border">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={coverImage}
-                          alt="Cover"
-                          className={cn("h-full w-full", coverFit === "contain" ? "object-contain bg-muted/20" : "object-cover")}
-                        />
-                      </div>
+                      <>
+                        <div
+                          className={cn(
+                            "relative w-full overflow-hidden rounded-md border border-border",
+                            coverAspectClass,
+                          )}
+                        >
+                          <CoverPreview
+                            src={coverImage}
+                            fit={coverFit}
+                            zoom={coverZoom}
+                            x={coverX}
+                            y={coverY}
+                            className="h-full w-full"
+                          />
+                        </div>
+                        {/* ── Zoom + Pan sliders ── */}
+                        <div className="rounded-lg border border-border bg-muted/30 p-3 flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              Zoom &amp; Position
+                            </p>
+                            <select
+                              value={coverFit}
+                              onChange={(e) => setCoverFit(e.target.value)}
+                              className="h-6 rounded-md border border-border bg-background px-1.5 text-[10px] text-muted-foreground focus:ring-0"
+                            >
+                              <option value="cover">Cover</option>
+                              <option value="contain">Contain</option>
+                            </select>
+                          </div>
+                          <ControlSlider
+                            label="Zoom"
+                            value={coverZoom}
+                            min={1}
+                            max={3}
+                            step={0.05}
+                            display={`${Math.round(coverZoom * 100)}%`}
+                            onChange={setCoverZoom}
+                          />
+                          <ControlSlider
+                            label="Horizontal"
+                            value={coverX}
+                            min={0}
+                            max={100}
+                            step={1}
+                            display={`${coverX}%`}
+                            onChange={setCoverX}
+                          />
+                          <ControlSlider
+                            label="Vertical"
+                            value={coverY}
+                            min={0}
+                            max={100}
+                            step={1}
+                            display={`${coverY}%`}
+                            onChange={setCoverY}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCoverZoom(1);
+                              setCoverX(50);
+                              setCoverY(50);
+                            }}
+                            className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline hover:text-foreground"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                      </>
                     )}
-                  </TabsContent>
-                  <TabsContent value="unsplash" className="pt-4">
-                    <div className="flex flex-col gap-2 text-center text-sm text-muted-foreground py-4">
-                      <p>Unsplash integration coming soon.</p>
-                      <Input placeholder="Search Unsplash..." disabled />
-                    </div>
                   </TabsContent>
                 </Tabs>
               </PopoverContent>
             </Popover>
           </div>
 
+          {/* Right-side controls */}
           <div className="flex items-center gap-2 shrink-0">
             <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
               {busy && (
@@ -708,6 +933,7 @@ export function PostEditor({
                 View <ExternalLink className="h-3.5 w-3.5" />
               </Link>
             ) : null}
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" title="More Options">
@@ -759,6 +985,7 @@ export function PostEditor({
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Delete dialog */}
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -780,12 +1007,14 @@ export function PostEditor({
               </AlertDialogContent>
             </AlertDialog>
 
+            {/* Post settings dialog */}
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-[460px]">
                 <DialogHeader>
                   <DialogTitle>Post Settings</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="grid gap-5 py-4">
+                  {/* Author */}
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Author</label>
                     <Input
@@ -794,6 +1023,8 @@ export function PostEditor({
                       placeholder="Author name"
                     />
                   </div>
+
+                  {/* Category */}
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Category</label>
                     <Input
@@ -802,17 +1033,32 @@ export function PostEditor({
                       placeholder="Category (e.g. Research)"
                     />
                   </div>
-                  <div className="grid gap-2">
+
+                  {/* Cover image section */}
+                  <div className="grid gap-3">
                     <label className="text-sm font-medium">Cover Image</label>
-                    <div className="flex items-center gap-2">
-                      {coverImage ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={coverImage || "/placeholder.svg"}
-                            alt=""
-                            className={cn("h-9 w-12 shrink-0 rounded-md border border-border", coverFit === "contain" ? "object-contain bg-muted/20" : "object-cover")}
+
+                    {coverImage ? (
+                      <>
+                        {/* Live preview with current zoom/pan */}
+                        <div
+                          className={cn(
+                            "relative w-full overflow-hidden rounded-xl border border-border",
+                            coverAspectClass,
+                          )}
+                        >
+                          <CoverPreview
+                            src={coverImage}
+                            fit={coverFit}
+                            zoom={coverZoom}
+                            x={coverX}
+                            y={coverY}
+                            className="h-full w-full"
                           />
+                        </div>
+
+                        {/* Visibility + size + fit row */}
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setShowCover(!currentShowCover)}
@@ -854,6 +1100,20 @@ export function PostEditor({
                           </select>
                           <button
                             type="button"
+                            onClick={() => coverInput.current?.click()}
+                            disabled={coverUploading}
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
+                            aria-label="Replace cover"
+                            title="Replace image"
+                          >
+                            {coverUploading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ImagePlus className="h-4 w-4" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => {
                               setCoverImage(null);
                               setShowCover(false);
@@ -863,34 +1123,81 @@ export function PostEditor({
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => coverInput.current?.click()}
-                          disabled={coverUploading}
-                          className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-dashed border-border text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                        >
-                          {coverUploading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <ImagePlus className="h-4 w-4" />
-                          )}
-                          Upload Cover Image
-                        </button>
-                      )}
-                    </div>
+                        </div>
+
+                        {/* ── Zoom + Pan sliders ── */}
+                        <div className="rounded-lg border border-border bg-muted/30 p-3 flex flex-col gap-3">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Zoom &amp; Position
+                          </p>
+
+                          <ControlSlider
+                            label="Zoom"
+                            value={coverZoom}
+                            min={1}
+                            max={3}
+                            step={0.05}
+                            display={`${Math.round(coverZoom * 100)}%`}
+                            onChange={setCoverZoom}
+                            disabled={!showCover}
+                          />
+                          <ControlSlider
+                            label="Horizontal"
+                            value={coverX}
+                            min={0}
+                            max={100}
+                            step={1}
+                            display={`${coverX}%`}
+                            onChange={setCoverX}
+                            disabled={!showCover}
+                          />
+                          <ControlSlider
+                            label="Vertical"
+                            value={coverY}
+                            min={0}
+                            max={100}
+                            step={1}
+                            display={`${coverY}%`}
+                            onChange={setCoverY}
+                            disabled={!showCover}
+                          />
+
+                          {/* Reset button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCoverZoom(1);
+                              setCoverX(50);
+                              setCoverY(50);
+                            }}
+                            className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline hover:text-foreground"
+                          >
+                            Reset zoom &amp; position
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => coverInput.current?.click()}
+                        disabled={coverUploading}
+                        className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-dashed border-border text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                      >
+                        {coverUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ImagePlus className="h-4 w-4" />
+                        )}
+                        Upload Cover Image
+                      </button>
+                    )}
                   </div>
                 </div>
               </DialogContent>
             </Dialog>
 
             <Button
-              variant={
-                dirtyRef.current || saveState === "saving"
-                  ? "outline"
-                  : "outline"
-              }
+              variant="outline"
               size="sm"
               onClick={doSave}
               disabled={busy}
@@ -916,11 +1223,13 @@ export function PostEditor({
           </div>
         </div>
       </div>
+
+      {/* ── Editor + Preview panels ── */}
       <ResizablePanelGroup dir="horizontal" className="h-full items-stretch">
         <ResizablePanel
           defaultSize={showPreview ? 50 : 100}
           minSize={30}
-          className="flex flex-col relative bg-transparent "
+          className="flex flex-col relative bg-transparent"
         >
           <div className="flex-1 overflow-y-auto">
             <div className="mx-auto max-w-4xl px-4 pb-6 pt-1 sm:px-8">
@@ -932,7 +1241,6 @@ export function PostEditor({
                     setLineSpacing={setLineSpacing}
                   />
                 </div>
-
                 <div
                   className="min-w-0 pb-20"
                   style={
@@ -953,12 +1261,12 @@ export function PostEditor({
             <ResizablePanel
               defaultSize={50}
               minSize={30}
-              className="bg-transparent "
+              className="bg-transparent"
             >
-              <div className="h-full  w-full rounded-tl-xl border border-border/50 bg-[#FAFAFA] shadow-sm flex flex-col overflow-hidden">
+              <div className="h-full w-full rounded-tl-xl border border-border/50 bg-[#FAFAFA] shadow-sm flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between border-b border-border/50 bg-[#FAFAFA] px-4 py-3 relative">
                   <div />
-                  <div className="flex flex-col items-start  w-full pl-3 absolute left-1/2 -translate-x-1/2 text-start">
+                  <div className="flex flex-col items-start w-full pl-3 absolute left-1/2 -translate-x-1/2 text-start">
                     <span className="font-semibold text-sm">Preview</span>
                     <span className="text-[10px] text-muted-foreground font-mono mt-0.5">
                       /blog/{post.slug}
@@ -973,6 +1281,7 @@ export function PostEditor({
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
+
                 <div
                   className="flex-1 overflow-y-auto bg-[#FAFAFA] relative"
                   style={
@@ -981,7 +1290,7 @@ export function PostEditor({
                     } as React.CSSProperties
                   }
                 >
-                  <div className="px-6 md:px-8 py-8 mx-auto max-w-4xl ">
+                  <div className="px-6 md:px-8 py-8 mx-auto max-w-4xl">
                     {/* Category */}
                     <div className="flex w-full justify-center items-center">
                       <span className="font-mono text-center w-fit text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -1015,23 +1324,26 @@ export function PostEditor({
                       <span>Just now</span>
                     </div>
 
-                    {/* Cover image */}
+                    {/* Cover image — uses CoverPreview so preview matches settings */}
                     {currentCoverImage && currentShowCover && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={currentCoverImage || "/placeholder.svg"}
-                        alt=""
+                      <div
                         className={cn(
-                          "mt-6 w-full rounded-xl border border-border",
-                          currentCoverFit === "contain" ? "object-contain bg-muted/20" : "object-cover",
-                          currentCoverSize === "small" && "aspect-3/1",
-                          currentCoverSize === "medium" && "aspect-2/1",
-                          currentCoverSize === "large" && "aspect-16/10",
+                          "mt-6 w-full overflow-hidden rounded-xl",
+                          coverAspectClass,
                         )}
-                      />
+                      >
+                        <CoverPreview
+                          src={currentCoverImage}
+                          fit={currentCoverFit}
+                          zoom={currentCoverZoom}
+                          x={currentCoverX}
+                          y={currentCoverY}
+                          className="h-full w-full"
+                        />
+                      </div>
                     )}
 
-                    {/* Article body — key=post.id forces clean remount on post switch */}
+                    {/* Article body */}
                     <ArticleContent
                       key={post.id}
                       id="article-body"
@@ -1064,8 +1376,7 @@ export function PostEditor({
           category,
           isEmpty: editor?.isEmpty ?? true,
           outline: editor
-            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ((editor.getJSON().content ?? []) as any[]).reduce<string[]>(
+            ? ((editor.getJSON().content ?? []) as any[]).reduce<string[]>(
                 (acc, node) => {
                   if (node.type === "heading") {
                     const text =

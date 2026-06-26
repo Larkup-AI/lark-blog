@@ -60,9 +60,9 @@ const DEFAULT_STYLES = `
 .larkup-meta-left { display: flex; align-items: center; gap: 1rem; }
 .larkup-meta-item { display: flex; align-items: center; gap: 0.375rem; }
 
-.larkup-cover-section { border-bottom: 1px solid #e5e7eb; }
+.larkup-cover-section { }
 .larkup-cover-inner { max-width: 56rem; margin: 0 auto; padding: 2.5rem 1.5rem; }
-.larkup-cover { width: 100%; border-radius: 0.75rem; border: 1px solid #e5e7eb; object-fit: cover; }
+.larkup-cover { width: 100%; border-radius: 0.75rem; object-fit: cover; }
 .larkup-cover-small { aspect-ratio: 3/1; }
 .larkup-cover-medium { aspect-ratio: 2/1; }
 .larkup-cover-large { aspect-ratio: 16/10; }
@@ -110,8 +110,8 @@ const DEFAULT_STYLES = `
   .larkup-author-initial { background-color: #f9fafb; color: #111827; }
   .larkup-author-name { color: #f9fafb; }
   .larkup-meta-row { border-color: #374151; color: #9ca3af; }
-  .larkup-cover-section { border-color: #374151; }
-  .larkup-cover { border-color: #374151; }
+  .larkup-cover-section { }
+  .larkup-cover { }
   .larkup-toc-title { color: #9ca3af; }
   .larkup-toc-list { border-color: #374151; }
   .larkup-toc-link { color: #9ca3af; }
@@ -281,7 +281,7 @@ function FetchingArticle(_a) {
     return (0, jsx_runtime_1.jsx)(ArticleView, Object.assign({ post: post }, viewProps));
 }
 function ArticleView({ post, className, style, prose, showHeader, showAuthor, showAuthorImage, showReadingTime, showDate, showCategory, showCover, showToc, classNames = {}, }) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const contentRef = (0, react_1.useRef)(null);
     const finalShowCover = showCover && ((_a = post.showCover) !== null && _a !== void 0 ? _a : true);
     const finalShowToc = showToc && ((_b = post.showToc) !== null && _b !== void 0 ? _b : true);
@@ -300,15 +300,24 @@ function ArticleView({ post, className, style, prose, showHeader, showAuthor, sh
                                     year: "numeric",
                                     month: "long",
                                     day: "numeric",
-                                }) }))] })] })), finalShowCover && post.coverImage && ((0, jsx_runtime_1.jsx)("div", { className: "larkup-cover-section", children: (0, jsx_runtime_1.jsx)("div", { className: "larkup-cover-inner", children: (0, jsx_runtime_1.jsx)("img", { src: post.coverImage, alt: post.title, className: [
-                            "larkup-cover",
-                            post.coverSize
+                                }) }))] })] })), finalShowCover && post.coverImage && ((0, jsx_runtime_1.jsx)("div", { className: "larkup-cover-section", children: (0, jsx_runtime_1.jsx)("div", { className: "larkup-cover-inner", children: (0, jsx_runtime_1.jsx)("div", { className: [
+                            post.coverFit === "cover" && post.coverSize
                                 ? `larkup-cover-${post.coverSize}`
-                                : "larkup-cover-large",
-                            classNames.coverImage,
+                                : post.coverFit === "cover"
+                                    ? "larkup-cover-large"
+                                    : undefined,
                         ]
                             .filter(Boolean)
-                            .join(" ") }) }) })), (0, jsx_runtime_1.jsxs)("div", { className: "larkup-body-layout", children: [finalShowToc && (0, jsx_runtime_1.jsx)("div", { className: "larkup-spacer" }), (0, jsx_runtime_1.jsx)("div", { className: "larkup-article-content", children: post.contentHtml ? ((0, jsx_runtime_1.jsx)("div", { ref: contentRef, className: [
+                            .join(" "), style: { overflow: "hidden", borderRadius: "0.75rem", width: "100%" }, children: (0, jsx_runtime_1.jsx)("img", { src: post.coverImage, alt: post.title, className: ["larkup-cover", classNames.coverImage]
+                                .filter(Boolean)
+                                .join(" "), style: {
+                                width: "100%",
+                                height: post.coverFit === "contain" ? "auto" : "100%",
+                                objectFit: post.coverFit === "contain" ? "contain" : "cover",
+                                objectPosition: `${(_d = post.coverX) !== null && _d !== void 0 ? _d : 50}% ${(_e = post.coverY) !== null && _e !== void 0 ? _e : 50}%`,
+                                transform: `scale(${(_f = post.coverZoom) !== null && _f !== void 0 ? _f : 1})`,
+                                transformOrigin: `${(_g = post.coverX) !== null && _g !== void 0 ? _g : 50}% ${(_h = post.coverY) !== null && _h !== void 0 ? _h : 50}%`,
+                            } }) }) }) })), (0, jsx_runtime_1.jsxs)("div", { className: "larkup-body-layout", children: [finalShowToc && (0, jsx_runtime_1.jsx)("div", { className: "larkup-spacer" }), (0, jsx_runtime_1.jsx)("div", { className: "larkup-article-content", children: post.contentHtml ? ((0, jsx_runtime_1.jsx)("div", { ref: contentRef, className: [
                                 prose ? "larkup-prose" : undefined,
                                 classNames.content,
                             ]
