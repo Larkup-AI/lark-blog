@@ -37,14 +37,13 @@ export async function GET(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    if (post && blogOwner) {
-      if (!post.authorName || post.authorName === "Admin") {
-        post.authorName = blogOwner.name;
-      }
-      (post as any).authorImage = blogOwner.image;
-    }
+    const postResponse = {
+      ...post,
+      authorName: !post.authorName || post.authorName === "Admin" ? blogOwner?.name : post.authorName,
+      authorImage: blogOwner?.image || null
+    };
 
-    return NextResponse.json({ post });
+    return NextResponse.json({ post: postResponse });
   } catch (error) {
     console.error("Failed to fetch post:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

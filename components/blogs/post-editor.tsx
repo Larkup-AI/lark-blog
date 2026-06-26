@@ -519,6 +519,17 @@ export function PostEditor({
 
   return (
     <div className="h-svh flex flex-col overflow-hidden bg-background">
+      <input
+        ref={coverInput}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onCoverPick(file);
+          e.target.value = "";
+        }}
+      />
       <div className="sticky top-0 z-30 bg-background border-b border-border/10">
         <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-4 flex-1">
@@ -852,17 +863,6 @@ export function PostEditor({
                           Upload Cover Image
                         </button>
                       )}
-                      <input
-                        ref={coverInput}
-                        type="file"
-                        accept="image/*"
-                        hidden
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) onCoverPick(file);
-                          e.target.value = "";
-                        }}
-                      />
                     </div>
                   </div>
                 </div>
