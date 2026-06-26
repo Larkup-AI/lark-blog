@@ -144,6 +144,7 @@ type SavePayload = {
   coverImage: string | null;
   showCover: boolean;
   coverSize: string;
+  coverFit: string;
   showToc: boolean;
   content: unknown;
   contentHtml: string;
@@ -173,6 +174,7 @@ export async function savePost(payload: SavePayload) {
       coverImage: payload.coverImage,
       showCover: payload.showCover,
       coverSize: payload.coverSize,
+      coverFit: payload.coverFit,
       showToc: payload.showToc,
       content: payload.content as never,
       contentHtml: payload.contentHtml,

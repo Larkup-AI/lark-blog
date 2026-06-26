@@ -10,6 +10,7 @@ export interface EditorState {
   coverImage: string | null;
   showCover: boolean;
   coverSize: string;
+  coverFit: string;
   showToc: boolean;
   published: boolean;
   showPreview: boolean;
@@ -21,6 +22,7 @@ export interface EditorState {
   setCoverImage: (image: string | null) => void;
   setShowCover: (show: boolean) => void;
   setCoverSize: (size: string) => void;
+  setCoverFit: (fit: string) => void;
   setShowToc: (show: boolean) => void;
   setPublished: (published: boolean) => void;
   setShowPreview: (show: boolean) => void;
@@ -39,6 +41,7 @@ export const useEditorStore = create<EditorState>()(
       coverImage: null,
       showCover: false,
       coverSize: "medium",
+      coverFit: "cover",
       showToc: true,
       published: false,
       showPreview: true,
@@ -50,6 +53,7 @@ export const useEditorStore = create<EditorState>()(
       setCoverImage: (coverImage) => set({ coverImage }),
       setShowCover: (showCover) => set({ showCover }),
       setCoverSize: (coverSize) => set({ coverSize }),
+      setCoverFit: (coverFit) => set({ coverFit }),
       setShowToc: (showToc) => set({ showToc }),
       setPublished: (published) => set({ published }),
       setShowPreview: (showPreview) => set({ showPreview }),
@@ -66,6 +70,7 @@ export const useEditorStore = create<EditorState>()(
           coverImage: post.coverImage,
           showCover: post.showCover ?? false,
           coverSize: post.coverSize ?? "medium",
+          coverFit: post.coverFit ?? "cover",
           showToc: post.showToc ?? true,
           published: post.published,
         });

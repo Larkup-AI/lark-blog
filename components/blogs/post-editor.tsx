@@ -182,6 +182,8 @@ export function PostEditor({
     setShowCover,
     coverSize,
     setCoverSize,
+    coverFit,
+    setCoverFit,
     showToc,
     setShowToc,
     published,
@@ -213,6 +215,7 @@ export function PostEditor({
   const currentCoverImage = mounted ? coverImage : post.coverImage;
   const currentShowCover = mounted ? showCover : (post.showCover ?? false);
   const currentCoverSize = mounted ? coverSize : (post.coverSize ?? "medium");
+  const currentCoverFit = mounted ? coverFit : (post.coverFit ?? "cover");
   const currentShowToc = mounted ? showToc : (post.showToc ?? true);
   const currentShowPreview = mounted ? showPreview : true;
   const currentLineSpacing = mounted ? lineSpacing : 1.3;
@@ -402,6 +405,7 @@ export function PostEditor({
         coverImage,
         showCover,
         coverSize,
+        coverFit,
         showToc,
         content: editor.getJSON(),
         contentHtml: editor.getHTML(),
@@ -423,6 +427,7 @@ export function PostEditor({
     coverImage,
     showCover,
     coverSize,
+    coverFit,
     showToc,
   ]);
 
@@ -465,13 +470,14 @@ export function PostEditor({
     coverImage,
     showCover,
     coverSize,
+    coverFit,
     showToc,
     docVersion,
   ]);
 
   useEffect(() => {
     dirtyRef.current = true;
-  }, [title, category, authorName, coverImage, showCover, coverSize, showToc]);
+  }, [title, category, authorName, coverImage, showCover, coverSize, coverFit, showToc]);
 
   const onCoverPick = async (file: File) => {
     setCoverUploading(true);
@@ -575,7 +581,7 @@ export function PostEditor({
                         <img
                           src={coverImage}
                           alt="Cover"
-                          className="h-full w-full object-cover"
+                          className={cn("h-full w-full", coverFit === "contain" ? "object-contain bg-muted/20" : "object-cover")}
                         />
                         <Button
                           size="icon"
@@ -643,7 +649,7 @@ export function PostEditor({
                         <img
                           src={coverImage}
                           alt="Cover"
-                          className="h-full w-full object-cover"
+                          className={cn("h-full w-full", coverFit === "contain" ? "object-contain bg-muted/20" : "object-cover")}
                         />
                       </div>
                     )}
@@ -805,7 +811,7 @@ export function PostEditor({
                           <img
                             src={coverImage || "/placeholder.svg"}
                             alt=""
-                            className="h-9 w-12 shrink-0 rounded-md border border-border object-cover"
+                            className={cn("h-9 w-12 shrink-0 rounded-md border border-border", coverFit === "contain" ? "object-contain bg-muted/20" : "object-cover")}
                           />
                           <button
                             type="button"
@@ -835,6 +841,16 @@ export function PostEditor({
                             <option value="small">S</option>
                             <option value="medium">M</option>
                             <option value="large">L</option>
+                          </select>
+                          <select
+                            value={coverFit}
+                            onChange={(e) => setCoverFit(e.target.value)}
+                            disabled={!showCover}
+                            className="h-9 rounded-md border border-border bg-background px-1.5 text-xs disabled:opacity-50"
+                            title="Cover fit"
+                          >
+                            <option value="cover">Cover</option>
+                            <option value="contain">Contain</option>
                           </select>
                           <button
                             type="button"
@@ -1006,7 +1022,8 @@ export function PostEditor({
                         src={currentCoverImage || "/placeholder.svg"}
                         alt=""
                         className={cn(
-                          "mt-6 w-full rounded-xl border border-border object-cover",
+                          "mt-6 w-full rounded-xl border border-border",
+                          currentCoverFit === "contain" ? "object-contain bg-muted/20" : "object-cover",
                           currentCoverSize === "small" && "aspect-3/1",
                           currentCoverSize === "medium" && "aspect-2/1",
                           currentCoverSize === "large" && "aspect-16/10",

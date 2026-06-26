@@ -1,0 +1,1 @@
+ALTER TABLE "posts" ADD COLUMN "coverFit" text DEFAULT 'cover' NOT NULL;

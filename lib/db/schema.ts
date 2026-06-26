@@ -84,6 +84,7 @@ export const posts = pgTable("posts", {
   coverImage: text("coverImage"),
   showCover: boolean("showCover").notNull().default(false),
   coverSize: text("coverSize").notNull().default("medium"),
+  coverFit: text("coverFit").notNull().default("cover"),
   category: text("category"),
   authorName: text("authorName"),
   published: boolean("published").notNull().default(false),
