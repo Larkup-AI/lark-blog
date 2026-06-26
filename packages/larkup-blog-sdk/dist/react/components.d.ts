@@ -8,7 +8,6 @@ export interface LarkupClassNames {
     metaItem?: string;
     coverImage?: string;
     content?: string;
-    mobileTocButton?: string;
 }
 interface BaseProps {
     className?: string;

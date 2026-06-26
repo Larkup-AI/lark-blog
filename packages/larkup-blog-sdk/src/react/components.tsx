@@ -24,19 +24,29 @@ const DEFAULT_STYLES = `
 .larkup-prose table th, .larkup-prose table td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
 .larkup-prose table th { background-color: #f9fafb; font-weight: 500; color: #111827; }
 
+/* Code syntax highlighting (Dark) */
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type, .hljs-addition { color: #c678dd; }
+.hljs-string, .hljs-meta .hljs-string, .hljs-doctag, .hljs-regexp { color: #98c379; }
+.hljs-title, .hljs-section, .hljs-name, .hljs-selector-id, .hljs-selector-class { color: #e06c75; }
+.hljs-attr, .hljs-variable, .hljs-template-variable, .hljs-class .hljs-title, .hljs-type { color: #d19a66; }
+.hljs-symbol, .hljs-bullet, .hljs-link, .hljs-meta, .hljs-selector-attr, .hljs-selector-pseudo { color: #61aeee; }
+.hljs-built_in, .hljs-title.class_, .hljs-class .hljs-title { color: #e5c07b; }
+.hljs-comment, .hljs-quote, .hljs-deletion { color: #7f848e; font-style: italic; }
+
 /* Layout styling */
 .larkup-layout { font-family: ui-sans-serif, system-ui, sans-serif; color: #111827; width: 100%; }
 .larkup-header-wrapper { max-width: 56rem; margin: 0 auto; padding: 2.5rem 1.5rem 0; text-align: center; }
 .larkup-category { font-size: 0.875rem; color: #6b7280; display: block; margin-bottom: 1rem; }
-.larkup-title { font-size: 2rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.025em; color: #111827; margin: 0 auto; max-width: 56rem; text-wrap: balance; }
-@media (min-width: 768px) { .larkup-title { font-size: 1.875rem; } }
-@media (min-width: 1024px) { .larkup-title { font-size: 3rem; } }
+.larkup-title { font-size: 1.75rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.025em; color: #111827; margin: 0 auto; max-width: 56rem; text-wrap: balance; }
+@media (min-width: 768px) { .larkup-title { font-size: 2rem; } }
+@media (min-width: 1024px) { .larkup-title { font-size: 2.25rem; } }
 .larkup-author-wrapper { margin-top: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.625rem; }
 .larkup-author-avatar { width: 1.75rem; height: 1.75rem; border-radius: 9999px; object-fit: cover; border: 1px solid #e5e7eb; }
 .larkup-author-initial { display: flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 9999px; background-color: #111827; color: #f9fafb; font-size: 0.75rem; font-weight: 600; }
 .larkup-author-name { font-size: 0.875rem; font-weight: 600; color: #111827; }
 .larkup-meta-row { margin-top: 2.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 1.5rem; font-size: 0.875rem; color: #6b7280; }
 .larkup-meta-left { display: flex; align-items: center; gap: 1rem; }
+.larkup-meta-item { display: flex; align-items: center; gap: 0.375rem; }
 
 .larkup-cover-section { border-bottom: 1px solid #e5e7eb; }
 .larkup-cover-inner { max-width: 56rem; margin: 0 auto; padding: 2.5rem 1.5rem; }
@@ -110,11 +120,9 @@ type Heading = { id: string; text: string; level: number };
 function LarkupToc({
   contentRef,
   onNavigate,
-  hideTitle,
 }: {
   contentRef: React.RefObject<HTMLDivElement>;
   onNavigate?: () => void;
-  hideTitle?: boolean;
 }) {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [activeId, setActiveId] = useState<string>("");
@@ -182,7 +190,7 @@ function LarkupToc({
 
   return (
     <nav aria-label="Table of contents">
-      {!hideTitle && <span className="larkup-toc-title">On this page</span>}
+      <span className="larkup-toc-title">On this page</span>
       <ul className="larkup-toc-list">
         {headings.map((h) => (
           <li
@@ -221,12 +229,8 @@ function LarkupToc({
 
 function LarkupMobileToc({
   contentRef,
-  buttonClassName,
-  buttonStyle,
 }: {
   contentRef: React.RefObject<HTMLDivElement>;
-  buttonClassName?: string;
-  buttonStyle?: CSSProperties;
 }) {
   const [open, setOpen] = useState(false);
   const [hasHeadings, setHasHeadings] = useState(false);
@@ -269,8 +273,7 @@ function LarkupMobileToc({
     <>
       <button
         type="button"
-        className={["larkup-mobile-toc-btn", buttonClassName].filter(Boolean).join(" ")}
-        style={buttonStyle}
+        className="larkup-mobile-toc-btn"
         onClick={() => setOpen(true)}
         aria-label="Open table of contents"
       >
@@ -321,7 +324,7 @@ function LarkupMobileToc({
           ✕
         </button>
         <p className="larkup-mobile-toc-heading">On this page</p>
-        <LarkupToc contentRef={contentRef} onNavigate={() => setOpen(false)} hideTitle />
+        <LarkupToc contentRef={contentRef} onNavigate={() => setOpen(false)} />
       </div>
     </>
   );
@@ -335,7 +338,6 @@ export interface LarkupClassNames {
   metaItem?: string;
   coverImage?: string;
   content?: string;
-  mobileTocButton?: string;
 }
 
 interface BaseProps {
@@ -602,7 +604,7 @@ function ArticleView({
         )}
       </div>
 
-      {finalShowToc && <LarkupMobileToc contentRef={contentRef} buttonClassName={classNames.mobileTocButton} />}
+      {finalShowToc && <LarkupMobileToc contentRef={contentRef} />}
     </article>
   );
 }

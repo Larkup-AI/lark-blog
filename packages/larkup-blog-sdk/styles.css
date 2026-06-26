@@ -56,3 +56,12 @@
 .larkup-prose li {
   margin-bottom: 0.25em;
 }
+
+/* Code syntax highlighting (Dark) */
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type, .hljs-addition { color: #c678dd; }
+.hljs-string, .hljs-meta .hljs-string, .hljs-doctag, .hljs-regexp { color: #98c379; }
+.hljs-title, .hljs-section, .hljs-name, .hljs-selector-id, .hljs-selector-class { color: #e06c75; }
+.hljs-attr, .hljs-variable, .hljs-template-variable, .hljs-class .hljs-title, .hljs-type { color: #d19a66; }
+.hljs-symbol, .hljs-bullet, .hljs-link, .hljs-meta, .hljs-selector-attr, .hljs-selector-pseudo { color: #61aeee; }
+.hljs-built_in, .hljs-title.class_, .hljs-class .hljs-title { color: #e5c07b; }
+.hljs-comment, .hljs-quote, .hljs-deletion { color: #7f848e; font-style: italic; }

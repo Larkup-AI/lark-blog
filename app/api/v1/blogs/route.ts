@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { settings, posts } from "@/lib/db/schema";
+import { settings, posts, user } from "@/lib/db/schema";
 import { eq, and, desc, count } from "drizzle-orm";
 
 export async function GET(req: Request) {
@@ -24,6 +24,8 @@ export async function GET(req: Request) {
     if (!userSettings) {
       return NextResponse.json({ error: "Unauthorized: Invalid API Key" }, { status: 401 });
     }
+
+    const [blogOwner] = await db.select({ name: user.name, image: user.image }).from(user).where(eq(user.id, userSettings.userId));
 
     let queryConditions = eq(posts.userId, userSettings.userId);
 
@@ -55,8 +57,14 @@ export async function GET(req: Request) {
       .limit(limit)
       .offset(offset);
 
+    const postsWithAuthor = paginatedPosts.map(p => ({
+      ...p,
+      authorName: !p.authorName || p.authorName === "Admin" ? blogOwner?.name : p.authorName,
+      authorImage: blogOwner?.image || null
+    }));
+
     return NextResponse.json({ 
-      posts: paginatedPosts,
+      posts: postsWithAuthor,
       pagination: {
         page,
         limit,

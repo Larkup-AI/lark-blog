@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { settings, posts } from "@/lib/db/schema";
+import { settings, posts, user } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function GET(
@@ -23,6 +23,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized: Invalid API Key" }, { status: 401 });
     }
 
+    const [blogOwner] = await db.select({ name: user.name, image: user.image }).from(user).where(eq(user.id, userSettings.userId));
+
     let queryConditions = and(eq(posts.userId, userSettings.userId), eq(posts.slug, slug));
 
     if (!includeDrafts) {
@@ -33,6 +35,13 @@ export async function GET(
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    if (post && blogOwner) {
+      if (!post.authorName || post.authorName === "Admin") {
+        post.authorName = blogOwner.name;
+      }
+      (post as any).authorImage = blogOwner.image;
     }
 
     return NextResponse.json({ post });

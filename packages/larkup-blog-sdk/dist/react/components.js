@@ -36,19 +36,29 @@ const DEFAULT_STYLES = `
 .larkup-prose table th, .larkup-prose table td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
 .larkup-prose table th { background-color: #f9fafb; font-weight: 500; color: #111827; }
 
+/* Code syntax highlighting (Dark) */
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type, .hljs-addition { color: #c678dd; }
+.hljs-string, .hljs-meta .hljs-string, .hljs-doctag, .hljs-regexp { color: #98c379; }
+.hljs-title, .hljs-section, .hljs-name, .hljs-selector-id, .hljs-selector-class { color: #e06c75; }
+.hljs-attr, .hljs-variable, .hljs-template-variable, .hljs-class .hljs-title, .hljs-type { color: #d19a66; }
+.hljs-symbol, .hljs-bullet, .hljs-link, .hljs-meta, .hljs-selector-attr, .hljs-selector-pseudo { color: #61aeee; }
+.hljs-built_in, .hljs-title.class_, .hljs-class .hljs-title { color: #e5c07b; }
+.hljs-comment, .hljs-quote, .hljs-deletion { color: #7f848e; font-style: italic; }
+
 /* Layout styling */
 .larkup-layout { font-family: ui-sans-serif, system-ui, sans-serif; color: #111827; width: 100%; }
 .larkup-header-wrapper { max-width: 56rem; margin: 0 auto; padding: 2.5rem 1.5rem 0; text-align: center; }
 .larkup-category { font-size: 0.875rem; color: #6b7280; display: block; margin-bottom: 1rem; }
-.larkup-title { font-size: 2rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.025em; color: #111827; margin: 0 auto; max-width: 56rem; text-wrap: balance; }
-@media (min-width: 768px) { .larkup-title { font-size: 1.875rem; } }
-@media (min-width: 1024px) { .larkup-title { font-size: 3rem; } }
+.larkup-title { font-size: 1.75rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.025em; color: #111827; margin: 0 auto; max-width: 56rem; text-wrap: balance; }
+@media (min-width: 768px) { .larkup-title { font-size: 2rem; } }
+@media (min-width: 1024px) { .larkup-title { font-size: 2.25rem; } }
 .larkup-author-wrapper { margin-top: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.625rem; }
 .larkup-author-avatar { width: 1.75rem; height: 1.75rem; border-radius: 9999px; object-fit: cover; border: 1px solid #e5e7eb; }
 .larkup-author-initial { display: flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 9999px; background-color: #111827; color: #f9fafb; font-size: 0.75rem; font-weight: 600; }
 .larkup-author-name { font-size: 0.875rem; font-weight: 600; color: #111827; }
 .larkup-meta-row { margin-top: 2.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 1.5rem; font-size: 0.875rem; color: #6b7280; }
 .larkup-meta-left { display: flex; align-items: center; gap: 1rem; }
+.larkup-meta-item { display: flex; align-items: center; gap: 0.375rem; }
 
 .larkup-cover-section { border-bottom: 1px solid #e5e7eb; }
 .larkup-cover-inner { max-width: 56rem; margin: 0 auto; padding: 2.5rem 1.5rem; }
@@ -116,7 +126,7 @@ const DEFAULT_STYLES = `
   .larkup-mobile-toc-heading { color: #9ca3af; }
 }
 `;
-function LarkupToc({ contentRef, onNavigate, hideTitle, }) {
+function LarkupToc({ contentRef, onNavigate, }) {
     const [headings, setHeadings] = (0, react_1.useState)([]);
     const [activeId, setActiveId] = (0, react_1.useState)("");
     (0, react_1.useEffect)(() => {
@@ -170,7 +180,7 @@ function LarkupToc({ contentRef, onNavigate, hideTitle, }) {
     }, [contentRef]);
     if (headings.length === 0)
         return null;
-    return ((0, jsx_runtime_1.jsxs)("nav", { "aria-label": "Table of contents", children: [!hideTitle && (0, jsx_runtime_1.jsx)("span", { className: "larkup-toc-title", children: "On this page" }), (0, jsx_runtime_1.jsx)("ul", { className: "larkup-toc-list", children: headings.map((h) => ((0, jsx_runtime_1.jsx)("li", { className: [
+    return ((0, jsx_runtime_1.jsxs)("nav", { "aria-label": "Table of contents", children: [(0, jsx_runtime_1.jsx)("span", { className: "larkup-toc-title", children: "On this page" }), (0, jsx_runtime_1.jsx)("ul", { className: "larkup-toc-list", children: headings.map((h) => ((0, jsx_runtime_1.jsx)("li", { className: [
                         "larkup-toc-item",
                         h.level === 3 ? "larkup-toc-item-level-3" : undefined,
                     ]
@@ -188,7 +198,7 @@ function LarkupToc({ contentRef, onNavigate, hideTitle, }) {
                             .filter(Boolean)
                             .join(" "), children: h.text }) }, h.id))) })] }));
 }
-function LarkupMobileToc({ contentRef, buttonClassName, buttonStyle, }) {
+function LarkupMobileToc({ contentRef, }) {
     const [open, setOpen] = (0, react_1.useState)(false);
     const [hasHeadings, setHasHeadings] = (0, react_1.useState)(false);
     (0, react_1.useEffect)(() => {
@@ -224,7 +234,7 @@ function LarkupMobileToc({ contentRef, buttonClassName, buttonStyle, }) {
     }, [open]);
     if (!hasHeadings)
         return null;
-    return ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsxs)("button", { type: "button", className: ["larkup-mobile-toc-btn", buttonClassName].filter(Boolean).join(" "), style: buttonStyle, onClick: () => setOpen(true), "aria-label": "Open table of contents", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [(0, jsx_runtime_1.jsx)("path", { d: "M16 12H3" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 6H3" }), (0, jsx_runtime_1.jsx)("path", { d: "M10 18H3" }), (0, jsx_runtime_1.jsx)("path", { d: "M21 6l-3 6 3 6" })] }), "Contents"] }), (0, jsx_runtime_1.jsx)("div", { className: [
+    return ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsxs)("button", { type: "button", className: "larkup-mobile-toc-btn", onClick: () => setOpen(true), "aria-label": "Open table of contents", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [(0, jsx_runtime_1.jsx)("path", { d: "M16 12H3" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 6H3" }), (0, jsx_runtime_1.jsx)("path", { d: "M10 18H3" }), (0, jsx_runtime_1.jsx)("path", { d: "M21 6l-3 6 3 6" })] }), "Contents"] }), (0, jsx_runtime_1.jsx)("div", { className: [
                     "larkup-mobile-toc-overlay",
                     open ? "larkup-mobile-toc-overlay-open" : undefined,
                 ]
@@ -234,7 +244,7 @@ function LarkupMobileToc({ contentRef, buttonClassName, buttonStyle, }) {
                     open ? "larkup-mobile-toc-panel-open" : undefined,
                 ]
                     .filter(Boolean)
-                    .join(" "), role: "dialog", "aria-modal": "true", "aria-label": "Table of contents", children: [(0, jsx_runtime_1.jsx)("button", { type: "button", className: "larkup-mobile-toc-close", onClick: () => setOpen(false), "aria-label": "Close", children: "\u2715" }), (0, jsx_runtime_1.jsx)("p", { className: "larkup-mobile-toc-heading", children: "On this page" }), (0, jsx_runtime_1.jsx)(LarkupToc, { contentRef: contentRef, onNavigate: () => setOpen(false), hideTitle: true })] })] }));
+                    .join(" "), role: "dialog", "aria-modal": "true", "aria-label": "Table of contents", children: [(0, jsx_runtime_1.jsx)("button", { type: "button", className: "larkup-mobile-toc-close", onClick: () => setOpen(false), "aria-label": "Close", children: "\u2715" }), (0, jsx_runtime_1.jsx)("p", { className: "larkup-mobile-toc-heading", children: "On this page" }), (0, jsx_runtime_1.jsx)(LarkupToc, { contentRef: contentRef, onNavigate: () => setOpen(false) })] })] }));
 }
 function LarkupArticle(_a) {
     var { className, style, prose = true, renderLoading, renderError, showHeader = true, showAuthor = true, showReadingTime = true, showDate = true, showCategory = true, showCover = true, showToc = true, classNames = {} } = _a, rest = __rest(_a, ["className", "style", "prose", "renderLoading", "renderError", "showHeader", "showAuthor", "showReadingTime", "showDate", "showCategory", "showCover", "showToc", "classNames"]);
@@ -302,6 +312,6 @@ function ArticleView({ post, className, style, prose, showHeader, showAuthor, sh
                                 classNames.content,
                             ]
                                 .filter(Boolean)
-                                .join(" "), dangerouslySetInnerHTML: { __html: post.contentHtml } })) : null }), finalShowToc && ((0, jsx_runtime_1.jsx)("aside", { className: "larkup-sidebar", children: (0, jsx_runtime_1.jsx)("div", { className: "larkup-sidebar-sticky", children: (0, jsx_runtime_1.jsx)(LarkupToc, { contentRef: contentRef }) }) }))] }), finalShowToc && (0, jsx_runtime_1.jsx)(LarkupMobileToc, { contentRef: contentRef, buttonClassName: classNames.mobileTocButton })] }));
+                                .join(" "), dangerouslySetInnerHTML: { __html: post.contentHtml } })) : null }), finalShowToc && ((0, jsx_runtime_1.jsx)("aside", { className: "larkup-sidebar", children: (0, jsx_runtime_1.jsx)("div", { className: "larkup-sidebar-sticky", children: (0, jsx_runtime_1.jsx)(LarkupToc, { contentRef: contentRef }) }) }))] }), finalShowToc && (0, jsx_runtime_1.jsx)(LarkupMobileToc, { contentRef: contentRef })] }));
 }
 //# sourceMappingURL=components.js.map
