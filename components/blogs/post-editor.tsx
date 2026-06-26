@@ -33,6 +33,7 @@ import {
   MoreHorizontal,
   ZoomIn,
   Move,
+  Pin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { EditorToolbar } from "@/components/blogs/editor-toolbar";
@@ -270,6 +271,8 @@ export function PostEditor({
     setCoverY,
     showToc,
     setShowToc,
+    isMain,
+    setIsMain,
     published,
     setPublished: setPublishedState,
     showPreview,
@@ -486,6 +489,7 @@ export function PostEditor({
         coverX,
         coverY,
         showToc,
+        isMain,
         content: editor.getJSON(),
         contentHtml: editor.getHTML(),
       });
@@ -966,6 +970,15 @@ export function PostEditor({
                   className="cursor-pointer"
                 >
                   <Sparkles className="mr-2 h-4 w-4" /> AI write
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setIsMain(!isMain)}
+                  className="cursor-pointer"
+                >
+                  <Pin className="mr-2 h-4 w-4" />
+                  {isMain
+                    ? "Unpin as main post"
+                    : "Pin as main post"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setShowToc(!currentShowToc)}

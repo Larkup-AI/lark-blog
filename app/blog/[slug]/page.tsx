@@ -111,9 +111,15 @@ export default async function ArticlePage({
               <div
                 className={cn(
                   "w-full overflow-hidden rounded-xl",
-                  post.coverFit === "cover" && post.coverSize === "small" && "aspect-[3/1]",
-                  post.coverFit === "cover" && post.coverSize === "medium" && "aspect-[2/1]",
-                  post.coverFit === "cover" && post.coverSize === "large" && "aspect-[16/10]",
+                  post.coverFit === "cover" &&
+                    post.coverSize === "small" &&
+                    "aspect-3/1",
+                  post.coverFit === "cover" &&
+                    post.coverSize === "medium" &&
+                    "aspect-2/1",
+                  post.coverFit === "cover" &&
+                    post.coverSize === "large" &&
+                    "aspect-16/10",
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -123,7 +129,8 @@ export default async function ArticlePage({
                   style={{
                     width: "100%",
                     height: post.coverFit === "contain" ? "auto" : "100%",
-                    objectFit: post.coverFit === "contain" ? "contain" : "cover",
+                    objectFit:
+                      post.coverFit === "contain" ? "contain" : "cover",
                     objectPosition: `${post.coverX ?? 50}% ${post.coverY ?? 50}%`,
                     transform: `scale(${post.coverZoom ?? 1})`,
                     transformOrigin: `${post.coverX ?? 50}% ${post.coverY ?? 50}%`,

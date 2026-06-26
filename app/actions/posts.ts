@@ -149,6 +149,7 @@ type SavePayload = {
   coverX: number;
   coverY: number;
   showToc: boolean;
+  isMain: boolean;
   content: unknown;
   contentHtml: string;
 };
@@ -167,6 +168,13 @@ export async function savePost(payload: SavePayload) {
     ? await uniqueSlug(payload.title || "untitled", payload.id)
     : existing.slug;
 
+  if (payload.isMain) {
+    await db
+      .update(posts)
+      .set({ isMain: false })
+      .where(eq(posts.userId, session.user.id));
+  }
+
   await db
     .update(posts)
     .set({
@@ -182,6 +190,7 @@ export async function savePost(payload: SavePayload) {
       coverX: payload.coverX,
       coverY: payload.coverY,
       showToc: payload.showToc,
+      isMain: payload.isMain,
       content: payload.content as never,
       contentHtml: payload.contentHtml,
       readingTime: readingTimeFromHtml(payload.contentHtml),

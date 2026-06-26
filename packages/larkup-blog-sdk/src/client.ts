@@ -19,6 +19,7 @@ export interface Post {
   coverX?: number;
   coverY?: number;
   showToc?: boolean;
+  isMain?: boolean;
 }
 
 export interface LarkupBlogOptions {

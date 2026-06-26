@@ -57,10 +57,11 @@ export async function GET(req: Request) {
         publishedAt: posts.publishedAt,
         updatedAt: posts.updatedAt,
         showToc: posts.showToc,
+        isMain: posts.isMain,
       })
       .from(posts)
       .where(queryConditions)
-      .orderBy(desc(posts.updatedAt))
+      .orderBy(desc(posts.isMain), desc(posts.updatedAt))
       .limit(limit)
       .offset(offset);
 

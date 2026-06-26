@@ -16,6 +16,7 @@ export interface EditorState {
   coverY: number;
   showToc: boolean;
   published: boolean;
+  isMain: boolean;
   showPreview: boolean;
   lineSpacing: number;
 
@@ -31,6 +32,7 @@ export interface EditorState {
   setCoverY: (y: number) => void;
   setShowToc: (show: boolean) => void;
   setPublished: (published: boolean) => void;
+  setIsMain: (isMain: boolean) => void;
   setShowPreview: (show: boolean) => void;
   setLineSpacing: (spacing: number) => void;
 
@@ -53,6 +55,7 @@ export const useEditorStore = create<EditorState>()(
       coverY: 50,
       showToc: true,
       published: false,
+      isMain: false,
       showPreview: true,
       lineSpacing: 1.3,
 
@@ -68,6 +71,7 @@ export const useEditorStore = create<EditorState>()(
       setCoverY: (coverY) => set({ coverY }),
       setShowToc: (showToc) => set({ showToc }),
       setPublished: (published) => set({ published }),
+      setIsMain: (isMain) => set({ isMain }),
       setShowPreview: (showPreview) => set({ showPreview }),
       setLineSpacing: (lineSpacing) => set({ lineSpacing }),
 
@@ -88,6 +92,7 @@ export const useEditorStore = create<EditorState>()(
           coverY: post.coverY ?? 50,
           showToc: post.showToc ?? true,
           published: post.published,
+          isMain: post.isMain ?? false,
         });
       },
     }),
