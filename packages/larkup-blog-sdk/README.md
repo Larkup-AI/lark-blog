@@ -126,10 +126,12 @@ Fetches a single post by slug. Re-runs when `slug` or `preview` changes.
 
 #### `<LarkupArticle>`
 
-Renders a full article. Accepts either a pre-fetched `post` object or a `slug` to fetch automatically.
+Renders a full article with header, cover image, prose content, and optional table-of-contents sidebar. By default the layout matches the [Larkup Blog Studio](https://larkup.io) aesthetic.
+
+Accepts either a pre-fetched `post` object or a `slug` to fetch automatically.
 
 ```tsx
-// Auto-fetch by slug
+// Auto-fetch by slug (requires LarkupProvider)
 <LarkupArticle
   slug="hello-world"
   preview={false}
@@ -138,21 +140,95 @@ Renders a full article. Accepts either a pre-fetched `post` object or a `slug` t
   renderError={(err) => <p>{err.message}</p>}
 />
 
-// Pass a pre-fetched post (e.g. from getServerSideProps)
+// Pass a pre-fetched post (e.g. from getServerSideProps / server component)
 <LarkupArticle post={post} prose={true} />
 ```
 
-| Prop            | Type                        | Default | Description                                                  |
-| --------------- | --------------------------- | ------- | ------------------------------------------------------------ |
-| `slug`          | `string`                    | —       | Slug to fetch (mutually exclusive with `post`)               |
-| `post`          | `Post`                      | —       | Pre-fetched post object (mutually exclusive with `slug`)     |
-| `preview`       | `boolean`                   | `false` | Fetch draft version (only valid with `slug`)                 |
-| `prose`         | `boolean`                   | `true`  | Adds `larkup-prose` class to the content `<div>` for styling |
-| `showAuthorImage` | `boolean`                 | `true`  | Whether to show the author's profile image (if available)    |
-| `className`     | `string`                    | —       | Applied to the outer `<article>` element                     |
-| `style`         | `CSSProperties`             | —       | Inline styles for the outer `<article>` element              |
-| `renderLoading` | `() => ReactNode`           | —       | Custom loading state                                         |
-| `renderError`   | `(err: Error) => ReactNode` | —       | Custom error state                                           |
+##### Props
+
+| Prop              | Type                          | Default  | Description                                                                    |
+| ----------------- | ----------------------------- | -------- | ------------------------------------------------------------------------------ |
+| `slug`            | `string`                      | —        | Slug to fetch (mutually exclusive with `post`)                                 |
+| `post`            | `Post`                        | —        | Pre-fetched post object (mutually exclusive with `slug`)                       |
+| `preview`         | `boolean`                     | `false`  | Fetch draft version (only valid with `slug`)                                   |
+| `prose`           | `boolean`                     | `true`   | Inject built-in prose typography + layout styles                               |
+| `className`       | `string`                      | —        | Applied to the outer `<article>` element                                       |
+| `style`           | `CSSProperties`               | —        | Inline styles for the outer `<article>` element                                |
+| `maxWidth`        | `string`                      | `"56rem"`| Max-width for header, cover, and content sections (`--larkup-max-width`)       |
+| `showHeader`      | `boolean`                     | `true`   | Show the centered header (title, author, meta)                                 |
+| `showAuthor`      | `boolean`                     | `true`   | Show author avatar + name                                                      |
+| `showAuthorImage` | `boolean`                     | `true`   | Show author's profile image (falls back to initial)                            |
+| `showReadingTime` | `boolean`                     | `true`   | Show reading-time badge                                                        |
+| `showDate`        | `boolean`                     | `true`   | Show publish date                                                              |
+| `showCategory`    | `boolean`                     | `true`   | Show category breadcrumb                                                       |
+| `showCover`       | `boolean`                     | `true`   | Show cover image section                                                       |
+| `showToc`         | `boolean`                     | `true`   | Show table-of-contents sidebar (desktop) + mobile sheet                        |
+| `classNames`      | `LarkupClassNames`            | `{}`     | Class overrides for individual sub-elements (see below)                        |
+| `renderLoading`   | `() => ReactNode`             | —        | Custom loading state                                                           |
+| `renderError`     | `(err: Error) => ReactNode`   | —        | Custom error state                                                             |
+
+##### `classNames` slots
+
+Override any sub-element's class with the `classNames` prop:
+
+```tsx
+<LarkupArticle
+  post={post}
+  classNames={{
+    article: "my-article",
+    header: "my-header",
+    title: "text-foreground",
+    category: "text-muted",
+    authorWrapper: "gap-3",
+    authorName: "font-bold",
+    metaContainer: "text-muted-foreground",
+    metaItem: "gap-2",
+    coverSection: "bg-gray-50",
+    coverInner: "px-0",
+    coverImage: "rounded-2xl",
+    bodyLayout: "gap-12",
+    content: "prose-lg",
+    sidebar: "w-64",
+    sidebarSticky: "top-20",
+    tocTitle: "text-xs",
+  }}
+/>
+```
+
+| Slot             | Target element                                          |
+| ---------------- | ------------------------------------------------------- |
+| `article`        | Outer `<article>` wrapper                               |
+| `header`         | Header wrapper (centered block)                         |
+| `title`          | Article `<h1>`                                          |
+| `category`       | Category breadcrumb `<span>`                            |
+| `authorWrapper`  | Author row (avatar + name)                              |
+| `authorName`     | Author name `<span>`                                    |
+| `metaContainer`  | Meta row (reading time, date)                           |
+| `metaItem`       | Individual meta item                                    |
+| `coverSection`   | Cover image outer section                               |
+| `coverInner`     | Cover image inner container (respects `maxWidth`)       |
+| `coverImage`     | Cover `<img>` element                                   |
+| `bodyLayout`     | Body flex row (spacer | content | sidebar)              |
+| `content`        | Article content wrapper                                 |
+| `sidebar`        | Sidebar `<aside>`                                       |
+| `sidebarSticky`  | Sidebar sticky container                                |
+| `tocTitle`       | TOC heading ("On this page")                            |
+
+##### Adjusting layout width
+
+The default max-width is `56rem` (matching Larkup Blog Studio). Override it with the `maxWidth` prop:
+
+```tsx
+<LarkupArticle post={post} maxWidth="72rem" />
+```
+
+Or set the CSS variable directly:
+
+```css
+.my-wrapper {
+  --larkup-max-width: 72rem;
+}
+```
 
 ---
 
@@ -168,10 +244,19 @@ interface Post {
   coverImage?: string;
   category?: string;
   authorName?: string;
+  authorImage?: string;
   readingTime?: number;
   published: boolean;
   publishedAt?: string;
   updatedAt: string;
+  showCover?: boolean;
+  coverSize?: "small" | "medium" | "large";
+  coverFit?: "cover" | "contain";
+  coverZoom?: number;
+  coverX?: number;
+  coverY?: number;
+  showToc?: boolean;
+  isMain?: boolean;
 }
 ```
 
@@ -185,24 +270,32 @@ Both the client methods and hooks accept a `preview` flag. When `true`, the SDK 
 
 ## Styling prose content
 
-When `prose={true}` (the default), `<LarkupArticle>` wraps the HTML content in a `div.larkup-prose`. Add your own CSS (or a Tailwind Typography-style plugin) targeting that class:
+When `prose={true}` (the default), `<LarkupArticle>` injects built-in styles that match the Larkup Blog Studio aesthetic out of the box — no extra CSS required.
+
+To customise, override the relevant `.larkup-*` classes in your own CSS:
 
 ```css
-.larkup-prose {
-  max-width: 65ch;
-  line-height: 1.7;
+/* Widen the layout */
+.larkup-layout {
+  --larkup-max-width: 72rem;
 }
 
+/* Custom prose font */
+.larkup-prose {
+  font-family: "Georgia", serif;
+  font-size: 1.125rem;
+}
+
+/* Custom heading colours */
 .larkup-prose h2 {
-  font-size: 1.5rem;
-  margin-top: 2rem;
+  color: #1d4ed8;
 }
-.larkup-prose p {
-  margin-top: 1rem;
-}
-.larkup-prose a {
-  text-decoration: underline;
-}
+```
+
+To disable built-in styles entirely and provide your own, pass `prose={false}`:
+
+```tsx
+<LarkupArticle post={post} prose={false} className="my-custom-article" />
 ```
 
 ---
@@ -211,12 +304,15 @@ When `prose={true}` (the default), `<LarkupArticle>` wraps the HTML content in a
 
 ```
 src/
-├── client.ts          # LarkupBlogClient + Post types
-├── index.ts           # Main package entry
+├── client.ts              # LarkupBlogClient + Post types
+├── index.ts               # Main package entry
 └── react/
-    ├── context.tsx    # LarkupProvider, useLarkupClient, usePosts, usePost
-    ├── components.tsx # LarkupArticle
-    └── index.ts       # React sub-package entry
+    ├── styles.ts          # Default embedded CSS
+    ├── types.ts           # Shared TypeScript types
+    ├── toc.tsx            # LarkupToc + LarkupMobileToc
+    ├── components.tsx     # LarkupArticle, ArticleView, FetchingArticle
+    ├── context.tsx        # LarkupProvider, hooks
+    └── index.ts           # React sub-package entry
 ```
 
 ---

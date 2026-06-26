@@ -1,39 +1,11 @@
-import React, { CSSProperties } from "react";
-import { Post } from "../client";
-export interface LarkupClassNames {
-    article?: string;
-    header?: string;
-    title?: string;
-    metaContainer?: string;
-    metaItem?: string;
-    coverImage?: string;
-    content?: string;
-}
-interface BaseProps {
-    className?: string;
-    style?: CSSProperties;
-    prose?: boolean;
-    renderLoading?: () => React.ReactNode;
-    renderError?: (err: Error) => React.ReactNode;
-    showHeader?: boolean;
-    showAuthor?: boolean;
-    showAuthorImage?: boolean;
-    showReadingTime?: boolean;
-    showDate?: boolean;
-    showCategory?: boolean;
-    showCover?: boolean;
-    showToc?: boolean;
-    classNames?: LarkupClassNames;
-}
-type LarkupArticleProps = (BaseProps & {
-    slug: string;
-    post?: never;
-    preview?: boolean;
-}) | (BaseProps & {
-    post: Post;
-    slug?: never;
-    preview?: never;
-});
-export declare function LarkupArticle({ className, style, prose, renderLoading, renderError, showHeader, showAuthor, showAuthorImage, showReadingTime, showDate, showCategory, showCover, showToc, classNames, ...rest }: LarkupArticleProps): React.JSX.Element;
-export {};
+import { LarkupClassNames, LarkupArticleProps } from "./types";
+export type { LarkupClassNames };
+/**
+ * Renders a full-featured blog article with header, cover image,
+ * prose content, and optional table-of-contents sidebar.
+ *
+ * Accepts either a pre-fetched `post` object or a `slug` to
+ * auto-fetch via the `<LarkupProvider>` context.
+ */
+export declare function LarkupArticle({ className, style, prose, renderLoading, renderError, showHeader, showAuthor, showAuthorImage, showReadingTime, showDate, showCategory, showCover, showToc, classNames, maxWidth, ...rest }: LarkupArticleProps): import("react").JSX.Element;
 //# sourceMappingURL=components.d.ts.map
