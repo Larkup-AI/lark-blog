@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     const apiKey = req.headers.get("x-api-key") || url.searchParams.get("key");
     const pageStr = url.searchParams.get("page");
     const limitStr = url.searchParams.get("limit");
+    const categoryFilter = url.searchParams.get("category");
     
     const page = typeof pageStr === "string" ? Math.max(1, parseInt(pageStr, 10) || 1) : 1;
     const limit = typeof limitStr === "string" ? Math.max(1, parseInt(limitStr, 10) || 10) : 10;
@@ -32,6 +33,11 @@ export async function GET(req: Request) {
     // If not including drafts (not in preview mode), only show published posts
     if (!includeDrafts) {
       queryConditions = and(queryConditions, eq(posts.published, true)) as any;
+    }
+
+    // Filter by category if provided
+    if (categoryFilter) {
+      queryConditions = and(queryConditions, eq(posts.category, categoryFilter)) as any;
     }
 
     const [countResult] = await db.select({ count: count() }).from(posts).where(queryConditions);
