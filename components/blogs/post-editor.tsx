@@ -75,6 +75,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -938,56 +939,73 @@ export function PostEditor({
               </Link>
             ) : null}
 
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              className="h-7 w-7 shrink-0"
+              title="Post settings"
+            >
+              <SettingsIcon className="h-4 w-4 text-muted-foreground" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAiOpen(true)}
+              className="h-7 px-3 text-sm flex items-center gap-1.5 shrink-0"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-accent" /> AI write
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" title="More Options">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="More Options"
+                  className="h-7 w-7"
+                >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="min-w-48">
                 <DropdownMenuItem
-                  onClick={() => setShowPreview(!currentShowPreview)}
-                  className="hidden md:flex cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowPreview(!currentShowPreview);
+                  }}
+                  className="hidden md:flex cursor-pointer justify-between"
                 >
-                  {showPreview ? (
-                    <>
-                      <PanelRightClose className="mr-2 h-4 w-4" /> Hide preview
-                    </>
-                  ) : (
-                    <>
-                      <PanelRightOpen className="mr-2 h-4 w-4" /> Show preview
-                    </>
-                  )}
+                  <span className="flex items-center">
+                    <PanelRightOpen className="mr-2 h-4 w-4" /> Preview
+                  </span>
+                  <Switch checked={showPreview} className="scale-[0.8] origin-right" />
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => setSettingsOpen(true)}
-                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowToc(!currentShowToc);
+                  }}
+                  className="cursor-pointer justify-between"
                 >
-                  <SettingsIcon className="mr-2 h-4 w-4" /> Post settings
+                  <span className="flex items-center">
+                    <ListTree className="mr-2 h-4 w-4" /> Table of contents
+                  </span>
+                  <Switch checked={showToc} className="scale-[0.8] origin-right" />
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => setAiOpen(true)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsMain(!isMain);
+                  }}
                   className="cursor-pointer"
                 >
-                  <Sparkles className="mr-2 h-4 w-4" /> AI write
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setIsMain(!isMain)}
-                  className="cursor-pointer"
-                >
-                  <Pin className="mr-2 h-4 w-4" />
-                  {isMain
-                    ? "Unpin as main post"
-                    : "Pin as main post"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setShowToc(!currentShowToc)}
-                  className="cursor-pointer"
-                >
-                  <ListTree className="mr-2 h-4 w-4" />
-                  {showToc
-                    ? "Hide table of contents"
-                    : "Show table of contents"}
+                  <Pin
+                    className="mr-2 h-4 w-4"
+                    fill={isMain ? "currentColor" : "none"}
+                  />
+                  {isMain ? "Unpin as main post" : "Pin as main post"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setDeleteOpen(true)}
@@ -1047,9 +1065,10 @@ export function PostEditor({
                       "Tutorials",
                     ];
                     const isCustom =
-                      !!category &&
-                      !PRESET_CATEGORIES.includes(category);
-                    const selectValue = isCustom ? "__custom__" : (category ?? "");
+                      !!category && !PRESET_CATEGORIES.includes(category);
+                    const selectValue = isCustom
+                      ? "__custom__"
+                      : (category ?? "");
                     return (
                       <div className="grid gap-2">
                         <label className="text-sm font-medium">Category</label>
