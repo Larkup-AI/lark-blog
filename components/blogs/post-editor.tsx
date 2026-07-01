@@ -1040,11 +1040,11 @@ export function PostEditor({
 
             {/* Post settings dialog */}
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-              <DialogContent className="sm:max-w-[460px]">
+              <DialogContent className="sm:max-w-[460px] max-h-[85vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Post Settings</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-5 py-4">
+                <div className="grid gap-5 py-4 overflow-y-auto pr-1">
                   {/* Author */}
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Author</label>

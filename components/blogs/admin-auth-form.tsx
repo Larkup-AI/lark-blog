@@ -64,7 +64,7 @@ export function AdminAuthForm() {
   return (
     <main className="flex min-h-svh items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
+        <div className="mb-2 text-center flex items-center justify-center gap-1">
           <span className="font-serif text-3xl tracking-tight text-foreground">
             Larkup
           </span>
@@ -73,12 +73,13 @@ export function AdminAuthForm() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h1 className="text-xl font-medium tracking-tight text-foreground">
+        <div className="rounded-xl text-center ">
+          {/* <h1 className="text-xl font-medium tracking-tight text-foreground">
             Sign in
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Access the private writing dashboard.
+          </h1> */}
+          <p className="text-sm text-muted-foreground">
+            {/* Access the private writing dashboard. */}
+            Sign in to your Larkup-Blog account to continue.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
@@ -91,6 +92,7 @@ export function AdminAuthForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                className="bg-white h-10 shadow-none!"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -104,7 +106,7 @@ export function AdminAuthForm() {
                   required
                   minLength={8}
                   autoComplete="current-password"
-                  className="pr-10"
+                  className="bg-white pr-10 h-10 shadow-none!"
                 />
                 <button
                   type="button"
@@ -129,7 +131,11 @@ export function AdminAuthForm() {
               </p>
             )}
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-10 text-sm"
+            >
               {loading ? "Please wait..." : "Sign in"}
             </Button>
           </form>
