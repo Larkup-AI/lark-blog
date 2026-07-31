@@ -17,7 +17,7 @@ export default async function SettingsPage() {
   const settings = await getSettings();
 
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh bg-background ">
       {/* Header */}
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 max-w-5xl items-center px-6">
@@ -31,17 +31,19 @@ export default async function SettingsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-12">
-        <div className="mb-8">
-          <h1 className="font-sans text-3xl font-medium tracking-tight text-foreground">
-            Settings
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Configure your blog studio preferences and API access.
-          </p>
-        </div>
+      <main className="mx-auto max-w-5xl px-6 py-12 min-h-[calc(100svh-4rem)]">
+        <div className="w-full">
+          <div className="mb-8">
+            <h1 className="font-sans text-3xl font-medium tracking-tight text-foreground">
+              Settings
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Configure your blog studio preferences and API access.
+            </p>
+          </div>
 
-        <SettingsForm initialSettings={settings} />
+          <SettingsForm initialSettings={settings} />
+        </div>
       </main>
     </div>
   );

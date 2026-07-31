@@ -136,7 +136,7 @@ export function InviteDialog() {
                 />
                 <Label
                   htmlFor="full_admin"
-                  className="flex flex-col items-start justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-muted hover:text-accent hover:border-primary/10  peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  className="flex flex-col items-start justify-between rounded-md border-2 border-border bg-background p-4 hover:bg-secondary peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                 >
                   <div className="font-semibold flex items-center">
                     Full Admin
@@ -155,7 +155,7 @@ export function InviteDialog() {
                 />
                 <Label
                   htmlFor="admin"
-                  className="flex flex-col items-start justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-muted hover:text-accent hover:border-primary/10 peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  className="flex flex-col items-start justify-between rounded-md border-2 border-border bg-background p-4 hover:bg-secondary peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                 >
                   <div className="font-semibold flex items-center">Admin</div>
                   <div className="text-sm text-muted-foreground mt-1">
@@ -173,7 +173,7 @@ export function InviteDialog() {
                 />
                 <Label
                   htmlFor="user"
-                  className="flex flex-col items-start justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-muted hover:text-accent hover:border-primary/10 peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  className="flex flex-col items-start justify-between rounded-md border-2 border-border bg-background p-4 hover:bg-secondary peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                 >
                   <div className="font-semibold flex items-center">User</div>
                   <div className="text-sm text-muted-foreground mt-1">

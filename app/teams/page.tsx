@@ -77,8 +77,8 @@ export default async function TeamsPage() {
           {combinedUsers.length > 0 ? (
             <div className="rounded-md border">
               <Table>
-                <TableHeader className="bg-white/60 ">
-                  <TableRow className="bg-white/60">
+                <TableHeader className="bg-secondary/50">
+                  <TableRow className="bg-secondary/50">
                     <TableHead className="rounded-tl-lg!">Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
@@ -98,7 +98,7 @@ export default async function TeamsPage() {
                         {u.isInvite && (
                           <Badge
                             variant="outline"
-                            className="ml-2 bg-orange-100/60 text-orange-500 border-orange-200 hover:bg-amber-50"
+                            className="ml-2 bg-amber-50 text-amber-600 border-amber-200"
                           >
                             Pending
                           </Badge>
@@ -124,7 +124,7 @@ export default async function TeamsPage() {
               </Table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center bg-card">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center bg-background">
               <Users className="h-8 w-8 text-muted-foreground" />
               <p className="mt-4 text-sm text-muted-foreground">
                 No team members yet. Invite someone to start collaborating.

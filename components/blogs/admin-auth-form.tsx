@@ -73,7 +73,7 @@ export function AdminAuthForm() {
           </p>
         </div>
 
-        <div className="rounded-xl text-center ">
+        <div className="rounded-xl border border-border p-6 text-center">
           {/* <h1 className="text-xl font-medium tracking-tight text-foreground">
             Sign in
           </h1> */}
@@ -92,7 +92,7 @@ export function AdminAuthForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="bg-white h-10 shadow-none!"
+                className="bg-background h-10 shadow-none!"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -106,7 +106,7 @@ export function AdminAuthForm() {
                   required
                   minLength={8}
                   autoComplete="current-password"
-                  className="bg-white pr-10 h-10 shadow-none!"
+                  className="bg-background pr-10 h-10 shadow-none!"
                 />
                 <button
                   type="button"

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#FAF7F5",
+  themeColor: "#FFFFFF",
 };
 
 export default function RootLayout({
@@ -43,7 +43,7 @@ export default function RootLayout({
       lang="en"
       className={` ${inter.variable} ${newsreader.variable} ${geistMono.variable}`}
     >
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased bg-background">
         {children}
         <Toaster position="bottom-right" />
         {process.env.NODE_ENV === "production" && <Analytics />}

@@ -95,7 +95,7 @@ export default async function AdminDashboard(props: {
                 <Link
                   key={post.id}
                   href={`/blogs/${post.id}`}
-                  className={`flex items-center justify-between gap-4 bg-card px-5 py-4 transition-colors hover:bg-secondary/50 ${
+                  className={`flex items-center justify-between gap-4 bg-background px-5 py-4 transition-colors duration-150 hover:bg-secondary ${
                     i > 0 ? "border-t border-border" : ""
                   }`}
                 >
@@ -107,8 +107,8 @@ export default async function AdminDashboard(props: {
                       <span
                         className={`shrink-0 rounded-full px-2 py-0 font-mono text-[0.6rem] uppercase tracking-wider ${
                           post.published
-                            ? "bg-green-100/40 border border-green-500 text-green-600"
-                            : "bg-secondary text-black/90 border border-black/50!"
+                            ? "bg-emerald-50 border border-emerald-200 text-emerald-600"
+                            : "bg-secondary text-muted-foreground border border-border"
                         }`}
                       >
                         {post.published ? "Published" : "Draft"}

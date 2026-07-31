@@ -197,7 +197,7 @@ export function ProfileForm() {
   return (
     <div className="space-y-8 max-w-2xl mx-auto w-full">
       {/* Profile Information */}
-      <div className="space-y-6 bg-card p-6 rounded-xl border border-border">
+      <div className="space-y-6 bg-background p-6 rounded-xl border border-border">
         <h2 className="text-lg font-medium text-foreground">
           Profile Information
         </h2>
@@ -209,7 +209,7 @@ export function ProfileForm() {
               onClick={() => setIsAvatarDialogOpen(true)}
               title="Change avatar"
             >
-              <Avatar className="h-16 w-16 border border-border/70 bg-white group-hover:opacity-75 transition-opacity">
+              <Avatar className="h-16 w-16 border border-border/70 bg-background group-hover:opacity-75 transition-opacity">
                 <AvatarImage src={previewAvatarUrl || ""} alt={user.name} />
                 <AvatarFallback className="text-xl">{initials}</AvatarFallback>
               </Avatar>
@@ -257,7 +257,7 @@ export function ProfileForm() {
       </div>
 
       {/* Security */}
-      <div className="space-y-6 bg-card p-6 rounded-xl border border-border">
+      <div className="space-y-6 bg-background p-6 rounded-xl border border-border">
         <div>
           <h2 className="text-lg font-medium text-foreground">Security</h2>
           <p className="text-sm text-muted-foreground mt-1">
