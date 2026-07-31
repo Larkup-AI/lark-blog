@@ -67,7 +67,7 @@ export function ResizableImageView({
         ref={wrapperRef}
         className={cn(
           "group relative inline-block max-w-full",
-          selected && "outline outline-2 outline-offset-2 outline-accent",
+          selected && " outline-2 outline-offset-2 outline-accent",
         )}
         style={{ width: width ?? "auto" }}
       >

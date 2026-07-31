@@ -310,11 +310,11 @@ export function TableGripOverlay({ editor }: { editor: Editor }) {
         title="Add row"
       >
         {/* The line */}
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-transparent group-hover:bg-blue-400 transition-colors" />
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 bg-transparent group-hover:bg-blue-400 transition-colors" />
         {/* The + badge, centred */}
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-          flex h-[14px] w-[14px] items-center justify-center
+          flex h-3.5 w-3.5 items-center justify-center
           rounded-full bg-background border border-border
           group-hover:border-blue-400 group-hover:text-blue-500
           text-muted-foreground/50  transition-colors opacity-0 group-hover:opacity-100"
@@ -333,10 +333,10 @@ export function TableGripOverlay({ editor }: { editor: Editor }) {
         }}
         title="Add column"
       >
-        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] bg-transparent group-hover:bg-blue-400 transition-colors" />
+        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-transparent group-hover:bg-blue-400 transition-colors" />
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-          flex h-[14px] w-[14px] items-center justify-center
+          flex h-3.5 w-3.5 items-center justify-center
           rounded-full bg-background border border-border
           group-hover:border-blue-400 group-hover:text-blue-500
           text-muted-foreground/50  transition-colors opacity-0 group-hover:opacity-100"

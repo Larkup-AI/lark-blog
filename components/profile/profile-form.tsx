@@ -414,7 +414,7 @@ export function ProfileForm() {
           <DialogHeader>
             <DialogTitle>Crop image</DialogTitle>
           </DialogHeader>
-          <div className="relative w-full h-[300px]">
+          <div className="relative w-full h-75">
             {imageSrc && (
               <Cropper
                 image={imageSrc}

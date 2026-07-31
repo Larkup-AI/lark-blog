@@ -197,7 +197,7 @@ export function ChartView({
       <div
         className={cn(
           "relative my-6 rounded-xl border border-border",
-          selected && "outline outline-2 outline-offset-2 outline-accent",
+          selected && " outline-2 outline-offset-2 outline-accent",
         )}
       >
         {!editing && (
@@ -416,7 +416,7 @@ export function ChartView({
                     spellCheck={false}
                   />
                 </label>
-                <label className="flex max-w-[180px] flex-col gap-1.5">
+                <label className="flex max-w-45 flex-col gap-1.5">
                   <span className="text-xs text-muted-foreground">
                     Height: {height}px
                   </span>
