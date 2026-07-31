@@ -1,10 +1,11 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { posts } from "@/lib/db/schema";
+import { posts, settings } from "@/lib/db/schema";
 import { getAdminUserId, getSession, isFullAdmin, isAdmin } from "@/lib/admin";
 import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { createHmac } from "crypto";
 
 function slugify(input: string) {
   return input
@@ -37,6 +38,79 @@ async function uniqueSlug(base: string, excludeId?: number) {
     n += 1;
     candidate = `${root}-${n}`;
   }
+}
+
+async function notifyFrontendRevalidation(slug?: string) {
+  try {
+    const adminId = await getAdminUserId();
+    if (!adminId) return;
+
+    const [userSettings] = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.userId, adminId))
+      .limit(1);
+
+    if (!userSettings?.previewUrl || !userSettings?.apiKey) return;
+
+    let url = userSettings.previewUrl.trim();
+    if (url.endsWith("/")) url = url.slice(0, -1);
+
+    const revalidate = async (tag: string) => {
+      const response = await fetch(`${url}/api/revalidate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          secret: userSettings.apiKey,
+          tag,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Revalidation failed for ${tag}: ${response.status}`);
+      }
+    };
+
+    await Promise.all([revalidate("blog"), ...(slug ? [revalidate(slug)] : [])]);
+  } catch (err) {
+    console.error("Failed to notify frontend for revalidation:", err);
+  }
+}
+
+/**
+ * Creates a short-lived, slug-scoped preview link for the consumer website.
+ * The API key stays server-side; the URL only contains an HMAC signature.
+ */
+export async function createPreviewUrl(postId: number) {
+  const adminId = await getAdminUserId();
+  if (!adminId) throw new Error("Unauthorized");
+
+  const [post] = await db
+    .select({ slug: posts.slug })
+    .from(posts)
+    .where(eq(posts.id, postId))
+    .limit(1);
+  if (!post) throw new Error("Post not found");
+
+  const [userSettings] = await db
+    .select({ previewUrl: settings.previewUrl, apiKey: settings.apiKey })
+    .from(settings)
+    .where(eq(settings.userId, adminId))
+    .limit(1);
+  if (!userSettings?.previewUrl || !userSettings.apiKey) {
+    throw new Error("Configure a consumer URL and API key before previewing.");
+  }
+
+  const expires = Math.floor(Date.now() / 1000) + 30 * 60;
+  const signature = createHmac("sha256", userSettings.apiKey)
+    .update(`${post.slug}.${expires}`)
+    .digest("hex");
+  const url = new URL("/api/blog-preview", userSettings.previewUrl);
+  url.searchParams.set("slug", post.slug);
+  url.searchParams.set("expires", String(expires));
+  url.searchParams.set("signature", signature);
+  return url.toString();
 }
 
 import { count } from "drizzle-orm";
@@ -201,6 +275,7 @@ export async function savePost(payload: SavePayload) {
   revalidatePath("/");
   revalidatePath(`/blog/${slug}`);
   revalidatePath("/");
+  await notifyFrontendRevalidation(slug);
   return { slug };
 }
 
@@ -224,6 +299,7 @@ export async function setPublished(id: number, published: boolean) {
   revalidatePath("/");
   revalidatePath(`/blog/${existing.slug}`);
   revalidatePath("/");
+  await notifyFrontendRevalidation(existing.slug);
 }
 
 export async function deletePost(id: number) {
@@ -240,4 +316,5 @@ export async function deletePost(id: number) {
   await db.delete(posts).where(eq(posts.id, id));
   revalidatePath("/");
   revalidatePath("/");
+  await notifyFrontendRevalidation(existing.slug);
 }
