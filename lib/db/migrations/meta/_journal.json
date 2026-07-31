@@ -43,6 +43,20 @@
       "when": 1782444094737,
       "tag": "0005_gray_mach_iv",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785530431953,
+      "tag": "0006_slimy_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785530431954,
+      "tag": "0008_add_post_views",
+      "breakpoints": true
     }
   ]
 }

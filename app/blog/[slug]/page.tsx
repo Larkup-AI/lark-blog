@@ -8,6 +8,7 @@ import { ArticleContent } from "@/components/blog/article-content";
 import { CopyUrlButton } from "@/components/blog/copy-url-button";
 import { ShareButtons } from "@/components/blog/share-buttons";
 import { TocSheet } from "@/components/blog/toc-sheet";
+import { AnalyticsTracker } from "@/components/blog/analytics-tracker";
 import { getPublishedPostBySlug, formatDate } from "@/lib/posts";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ export default async function ArticlePage({
 
   return (
     <div className="min-h-svh">
+      <AnalyticsTracker postId={post.id} />
       <SiteHeader />
       <main>
         {/* ── Centered editorial header ─────────────────────────────── */}

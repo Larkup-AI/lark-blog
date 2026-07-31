@@ -7,6 +7,7 @@ import {
   integer,
   jsonb,
   real,
+  index,
 } from "drizzle-orm/pg-core";
 
 /* ----------------------------- Better Auth tables ----------------------------- */
@@ -18,6 +19,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: text("image"),
   role: text("role").notNull().default("user"), // 'full_admin', 'admin', 'user'
+  vercelAiGatewayKey: text("vercelAiGatewayKey"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -102,11 +104,37 @@ export const posts = pgTable("posts", {
 
 export type Post = typeof posts.$inferSelect;
 
+/**
+ * Anonymous page-view events. `visitorId` is a random browser-local ID; it is
+ * intentionally not an IP address, email address, or other personal data.
+ */
+export const postViews = pgTable(
+  "post_views",
+  {
+    id: serial("id").primaryKey(),
+    postId: integer("postId")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    visitorId: text("visitorId").notNull(),
+    viewedAt: timestamp("viewedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("post_views_post_id_viewed_at_idx").on(table.postId, table.viewedAt),
+    index("post_views_viewed_at_idx").on(table.viewedAt),
+  ],
+);
+
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
   userId: text("userId").notNull().unique(), // One settings row per user/workspace
   apiKey: text("apiKey").unique(),
   previewUrl: text("previewUrl"),
+  aiProvider: text("aiProvider").notNull().default("vercel"), // 'vercel' or 'custom'
+  customAiUrl: text("customAiUrl"),
+  customAiKey: text("customAiKey"),
+  customAiModel: text("customAiModel"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, LogOut, Loader2, Users } from "lucide-react";
+import { Plus, LogOut, Loader2, Users, Settings, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -44,13 +44,24 @@ export function DashboardActions() {
 
   return (
     <div className="flex items-center gap-2">
+      <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+        <Link href="/analytics" aria-label="Analytics">
+          <BarChart3 className="h-4 w-4" />
+        </Link>
+      </Button>
       {isFullAdmin && (
-        <Button variant="outline" size="sm" asChild className="hidden sm:flex">
-          <Link href="/teams">
-            <Users className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Teams</span>
-          </Link>
-        </Button>
+        <div className="flex gap-0 items-center">
+          <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
+            <Link href="/teams">
+              <Users className="h-4 w-4 " />
+            </Link>
+          </Button>
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+            <Link href="/settings">
+              <Settings className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       )}
       <Button size="sm" onClick={onNew} disabled={pending}>
         {pending ? (
@@ -68,7 +79,7 @@ export function DashboardActions() {
               variant="ghost"
               className="relative h-8 w-8 rounded-full ml-2"
             >
-              <Avatar className="h-8 w-8 border bg-white border-border/70">
+              <Avatar className="h-8 w-8 border bg-background border-border/70">
                 <AvatarImage src={user.image || ""} alt={user.name} />
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
@@ -86,13 +97,6 @@ export function DashboardActions() {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/profile">Profile</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={!isFullAdmin} asChild={isFullAdmin}>
-              {isFullAdmin ? (
-                <Link href="/settings">Settings</Link>
-              ) : (
-                <span>Settings</span>
-              )}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onSignOut} disabled={signingOut}>
