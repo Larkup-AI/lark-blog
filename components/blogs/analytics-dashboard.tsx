@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { BarChart3, RefreshCw, Users, Eye } from "lucide-react";
+import { BarChart3, Check, ChevronsUpDown, Eye, RefreshCw, Users } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,12 +19,16 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type AnalyticsData = {
   days: number;
@@ -48,10 +53,38 @@ function formatDay(value: string) {
 
 export function AnalyticsDashboard() {
   const [range, setRange] = useState("7");
-  const [postId, setPostId] = useState("all");
+  const [articlePickerOpen, setArticlePickerOpen] = useState(false);
+  const [articleQuery, setArticleQuery] = useState("");
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const articleParam = searchParams.get("article");
+  const postId = articleParam && /^\d+$/.test(articleParam) ? articleParam : "all";
+
+  const selectedPost = data?.posts.find((post) => String(post.id) === postId);
+  const matchingPosts = useMemo(() => {
+    const query = articleQuery.trim().toLocaleLowerCase();
+    if (!query) return [];
+    return (data?.posts ?? [])
+      .filter((post) => post.title.toLocaleLowerCase().includes(query))
+      .slice(0, 50);
+  }, [articleQuery, data?.posts]);
+
+  const selectPost = useCallback(
+    (id: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (id === "all") params.delete("article");
+      else params.set("article", id);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      setArticlePickerOpen(false);
+      setArticleQuery("");
+    },
+    [pathname, router, searchParams],
+  );
 
   const load = useCallback(
     async (showLoading = true) => {
@@ -102,19 +135,62 @@ export function AnalyticsDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Select value={postId} onValueChange={setPostId}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All posts" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All posts</SelectItem>
-              {(data?.posts ?? []).map((post) => (
-                <SelectItem key={post.id} value={String(post.id)}>
-                  {post.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover
+            open={articlePickerOpen}
+            onOpenChange={(open) => {
+              setArticlePickerOpen(open);
+              if (!open) setArticleQuery("");
+            }}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={articlePickerOpen}
+                className="w-64 justify-between font-normal"
+              >
+                <span className="truncate">
+                  {selectedPost?.title ?? (postId === "all" ? "All articles" : "Loading article…")}
+                </span>
+                <ChevronsUpDown className="ml-2 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="start">
+              <Command shouldFilter={false}>
+                <CommandInput
+                  placeholder="Search articles…"
+                  value={articleQuery}
+                  onValueChange={setArticleQuery}
+                />
+                <CommandList>
+                  {!articleQuery ? (
+                    <CommandGroup heading="Filter analytics">
+                      <CommandItem value="all" onSelect={() => selectPost("all")}>
+                        <Check className={cn("mr-2", postId === "all" ? "opacity-100" : "opacity-0")} />
+                        All articles
+                      </CommandItem>
+                      {selectedPost && (
+                        <CommandItem value={String(selectedPost.id)} onSelect={() => selectPost(String(selectedPost.id))}>
+                          <Check className="mr-2 opacity-100" />
+                          <span className="truncate">{selectedPost.title}</span>
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  ) : (
+                    <CommandGroup heading="Matching articles">
+                      {matchingPosts.map((post) => (
+                        <CommandItem key={post.id} value={post.title} onSelect={() => selectPost(String(post.id))}>
+                          <Check className={cn("mr-2", postId === String(post.id) ? "opacity-100" : "opacity-0")} />
+                          <span className="truncate">{post.title}</span>
+                        </CommandItem>
+                      ))}
+                      {!matchingPosts.length && <CommandEmpty>No matching articles.</CommandEmpty>}
+                    </CommandGroup>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <Select value={range} onValueChange={setRange}>
             <SelectTrigger className="w-32">
               <SelectValue />
