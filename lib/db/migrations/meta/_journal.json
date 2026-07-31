@@ -55,6 +55,13 @@
       "idx": 7,
       "version": "7",
       "when": 1785530431954,
+      "tag": "0007_rename_gateway_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785530431955,
       "tag": "0008_add_post_views",
       "breakpoints": true
     }
