@@ -137,7 +137,7 @@ function Figure({
   children: React.ReactNode
 }) {
   return (
-    <figure className="my-8 rounded-xl border border-border bg-card p-4 md:p-6">
+    <figure className="my-8 rounded-xl border border-border bg-background p-4 md:p-6">
       {title && (
         <figcaption className="mb-4 text-center font-sans text-sm font-medium tracking-tight text-foreground">
           {title}

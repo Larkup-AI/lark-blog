@@ -541,7 +541,7 @@ export function EditorToolbar({
   return (
     <div
       ref={containerRef}
-      className="sticky top-0 z-10 flex items-center bg-white/75 px-2 py-1.5 backdrop-blur rounded-lg border border-border/50 overflow-hidden"
+      className="sticky top-0 z-10 flex items-center bg-background/80 px-2 py-1.5 backdrop-blur rounded-lg border border-border/50 overflow-hidden"
       style={{ gap: `${layout.gap}px` }}
     >
       {cleanVisible.map(renderVisible)}

@@ -5,7 +5,13 @@ import {
   tool,
   type UIMessage,
 } from "ai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { db } from "@/lib/db";
+import { settings, user } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { getAdminUserId } from "@/lib/admin";
 import { z } from "zod";
+import { createGateway } from "ai";
 
 export const maxDuration = 60;
 
@@ -90,7 +96,14 @@ export async function POST(req: Request) {
   const {
     messages,
     editorState,
-  }: { messages: UIMessage[]; editorState?: EditorState } = await req.json();
+    lengthSetting,
+    customWords,
+  }: {
+    messages: UIMessage[];
+    editorState?: EditorState;
+    lengthSetting?: string;
+    customWords?: string;
+  } = await req.json();
 
   const stateSummary = editorState
     ? [
@@ -103,20 +116,100 @@ export async function POST(req: Request) {
       ].join("\n")
     : "No editor state provided.";
 
-  const result = streamText({
-    model: "openai/gpt-5.2",
-    stopWhen: stepCountIs(40),
-    tools: editorTools,
-    system: `You are an expert blog writing assistant embedded inside a rich-text editor. You write and edit articles directly in the editor by calling the provided tools — you do NOT just print the article in chat.
+  const adminUserId = await getAdminUserId();
+  if (!adminUserId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
-How to work:
+  const [userSettings] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.userId, adminUserId));
+
+  const [currentUser] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, adminUserId));
+
+  let aiModel;
+  let usesMarkdownEditorFallback = false;
+  if (
+    userSettings?.aiProvider === "custom" &&
+    userSettings.customAiUrl &&
+    userSettings.customAiModel
+  ) {
+    // Many local OpenAI-compatible models can stream chat but do not implement
+    // reliable function calling. Ask those models for Markdown and let the
+    // client insert it into the editor, instead of leaving the article in chat.
+    usesMarkdownEditorFallback = true;
+    const customProvider = createOpenAICompatible({
+      name: "custom_chat_provider",
+      baseURL: userSettings.customAiUrl.endsWith("/")
+        ? userSettings.customAiUrl.slice(0, -1)
+        : userSettings.customAiUrl,
+      apiKey: userSettings.customAiKey || undefined,
+    });
+    aiModel = customProvider(userSettings.customAiModel);
+  } else if (
+    userSettings?.aiProvider === "vercel" ||
+    !userSettings?.aiProvider
+  ) {
+    if (!currentUser?.vercelAiGatewayKey) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Missing Vercel AI Gateway Key. Please configure it in Settings.",
+          code: "MISSING_GATEWAY_KEY",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    const gateway = createGateway({
+      apiKey: currentUser.vercelAiGatewayKey,
+    });
+    // Use the Vercel AI Gateway to access OpenAI model
+    aiModel = gateway("google/gemini-2.5-pro");
+  } else {
+    // Fallback if somehow another provider is selected but unsupported
+    return new Response(JSON.stringify({ error: "Unsupported AI Provider." }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const lengthPrompt = lengthSetting
+    ? lengthSetting === "custom" && customWords
+      ? `\n\nWhen writing new content, aim for approximately ${customWords} words.`
+      : lengthSetting !== "custom"
+        ? `\n\nWhen writing new content, aim for a ${lengthSetting} length.`
+        : ""
+    : "";
+
+  const result = streamText({
+    model: aiModel as any,
+    ...(usesMarkdownEditorFallback
+      ? {}
+      : { stopWhen: stepCountIs(40), tools: editorTools }),
+    system: `You are an expert blog writing assistant embedded inside a rich-text editor. You write and edit articles directly in the editor by calling the provided tools.
+IMPORTANT: ONLY write or edit when the user EXPLICITLY asks you to write, generate, or edit content. If the user is just chatting (e.g. saying "hi", asking a question), respond conversationally.${lengthPrompt}
+
+${usesMarkdownEditorFallback ? `This editor connection does not support function calling. When the user asks you to write or edit, return the finished content as Markdown only—do not describe what you are about to do. Use this exact shape:
+# Article title
+_Category: A concise category_
+
+Opening paragraph.
+
+## Section heading
+Body paragraph.
+
+Use normal Markdown headings, paragraphs, bullet/numbered lists, quotes, and fenced code where useful. The editor will insert this Markdown automatically. For non-writing questions, answer normally without this format.` : `How to work:
 - When the user asks you to write an article, build it directly using the tools: set a strong title, an appropriate category, then compose the body section by section.
 - Prefer many tool calls. You may emit several tool calls together. Insert content in reading order (top to bottom) — tools append to the end of the body.
 - Use insertHeading (level 2 for main sections, level 3 for sub-sections), insertParagraph for prose, insertBulletList/insertOrderedList for lists, insertCallout for tips/warnings, insertCodeBlock for code, insertQuote for notable quotes, and insertDivider sparingly.
 - Write in clear, engaging, well-structured prose. Vary paragraph length. Be accurate and concrete.
 - If the body already has content and the user asks to continue or add a section, append to it. Only call clearDocument when the user explicitly wants to start over.
 - Inline formatting in paragraphs/list items uses markdown: **bold**, *italic*, \`code\`, [text](url).
-- After you finish building or editing, reply with a brief (1-2 sentence) summary of what you did. Keep chat replies short — the real output goes into the editor.
+- After you finish building or editing, reply with a brief (1-2 sentence) summary of what you did. Keep chat replies short — the real output goes into the editor.`}
 
 Current editor state:
 ${stateSummary}`,

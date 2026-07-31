@@ -315,9 +315,9 @@ export function TableGripOverlay({ editor }: { editor: Editor }) {
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           flex h-[14px] w-[14px] items-center justify-center
-          rounded-full bg-white border border-neutral-300
+          rounded-full bg-background border border-border
           group-hover:border-blue-400 group-hover:text-blue-500
-          text-neutral-300 shadow-sm transition-colors opacity-0 group-hover:opacity-100"
+          text-muted-foreground/50  transition-colors opacity-0 group-hover:opacity-100"
         >
           <Plus className="h-2 w-2" />
         </div>
@@ -337,9 +337,9 @@ export function TableGripOverlay({ editor }: { editor: Editor }) {
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           flex h-[14px] w-[14px] items-center justify-center
-          rounded-full bg-white border border-neutral-300
+          rounded-full bg-background border border-border
           group-hover:border-blue-400 group-hover:text-blue-500
-          text-neutral-300 shadow-sm transition-colors opacity-0 group-hover:opacity-100"
+          text-muted-foreground/50  transition-colors opacity-0 group-hover:opacity-100"
         >
           <Plus className="h-2 w-2" />
         </div>
@@ -376,7 +376,7 @@ function MenuPanel({
 }) {
   return (
     <div
-      className="tgo pointer-events-auto fixed z-50 w-48 rounded-lg border border-neutral-200 bg-white shadow-lg py-1 text-sm"
+      className="tgo pointer-events-auto fixed z-50 w-48 rounded-lg border border-border bg-background py-1 text-sm"
       style={{ top: menu.top, left: menu.left }}
     >
       {menu.kind === "row" ? (

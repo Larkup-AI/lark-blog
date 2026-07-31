@@ -31,6 +31,7 @@ import {
   Globe,
   SettingsIcon,
   MoreHorizontal,
+  Copy,
   ZoomIn,
   Move,
   Pin,
@@ -38,6 +39,8 @@ import {
 import { toast } from "sonner";
 import { EditorToolbar } from "@/components/blogs/editor-toolbar";
 import { AiWriterPanel } from "@/components/blogs/ai-writer-panel";
+import { PostSettingsModal } from "@/components/blogs/post-settings-modal";
+import { looksLikeMarkdownDocument, parseMarkdownArticle } from "@/lib/markdown-article";
 import { ResizableImage } from "@/components/blogs/extensions/resizable-image";
 import { Callout } from "@/components/blogs/extensions/callout";
 import { CodeBlock } from "@/components/blogs/extensions/code-block";
@@ -77,6 +80,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -86,13 +95,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { savePost, setPublished, deletePost } from "@/app/actions/posts";
+import { createPreviewUrl, savePost, setPublished, deletePost } from "@/app/actions/posts";
 import type { Post } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 import { useEditorStore } from "./use-editor-store";
 import { Settings } from "@/lib/db/schema";
 
 type SaveState = "idle" | "saving" | "saved";
+
+const EXTERNAL_ARTICLE_PROMPT = `Write a complete, accurate blog article. Return only portable Markdown/MDX: optional YAML frontmatter with title and category, then one # title, ##/### headings, paragraphs, lists, quotes, links, images, and fenced code blocks. Do not include commentary, import statements, or custom JSX components.
+
+- Length: 600 words
+
+- Title: You suggest
+
+---
+
+Article about:
+
+
+
+
+
+
+`;
 
 // ─── Cover image helper ────────────────────────────────────────────────────────
 /**
@@ -318,6 +344,7 @@ export function PostEditor({
   const [aiOpen, setAiOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [openingPreview, setOpeningPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState(
     (post.contentHtml as string) ?? "",
   );
@@ -325,6 +352,36 @@ export function PostEditor({
   const coverInput = useRef<HTMLInputElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const inFlightUploadsRef = useRef(0);
+
+  const openPreviewOnSite = async () => {
+    setOpeningPreview(true);
+    const previewTab = window.open("", "_blank");
+    try {
+      const url = await createPreviewUrl(post.id);
+      if (previewTab) {
+        previewTab.opener = null;
+        previewTab.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      previewTab?.close();
+      toast.error(error instanceof Error ? error.message : "Could not create preview link");
+    } finally {
+      setOpeningPreview(false);
+    }
+  };
+
+  const copyExternalArticlePrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(EXTERNAL_ARTICLE_PROMPT);
+      toast.success("Article prompt copied", {
+        description: "Paste it into ChatGPT or Claude, then paste the final Markdown into this editor.",
+      });
+    } catch {
+      toast.error("Could not copy the article prompt");
+    }
+  };
 
   const { startUpload } = useUploadThing("imageUploader");
 
@@ -425,6 +482,24 @@ export function PostEditor({
           event.preventDefault();
           uploadRef.current(files);
           return true;
+        }
+        const markdown = event.clipboardData?.getData("text/plain") ?? "";
+        if (looksLikeMarkdownDocument(markdown)) {
+          const article = parseMarkdownArticle(markdown);
+          if (article.html) {
+            event.preventDefault();
+            // setContent is used after the paste is cancelled so Markdown is
+            // rendered as Studio blocks instead of appearing as raw text.
+            setTimeout(() => {
+              const activeEditor = editorRef.current;
+              if (!activeEditor) return;
+              activeEditor.commands.setContent(article.html);
+              if (article.title) setTitle(article.title);
+              if (article.category) setCategory(article.category);
+              toast.success("Markdown rendered in the editor");
+            }, 0);
+            return true;
+          }
         }
         return false;
       },
@@ -572,6 +647,21 @@ export function PostEditor({
     showToc,
   ]);
 
+    const uploadRawImage = async (file: File) => {
+    inFlightUploadsRef.current++;
+    try {
+      const compressed = await compressImage(file);
+      const res = await startUpload([compressed]);
+      const url = res?.[0]?.ufsUrl ?? res?.[0]?.url;
+      return url || null;
+    } catch (err) {
+      console.error(err);
+      return null;
+    } finally {
+      inFlightUploadsRef.current = Math.max(0, inFlightUploadsRef.current - 1);
+    }
+  };
+
   const onCoverPick = async (file: File) => {
     setCoverUploading(true);
     inFlightUploadsRef.current++;
@@ -628,7 +718,8 @@ export function PostEditor({
   );
 
   return (
-    <div className="h-svh flex flex-col overflow-hidden bg-background">
+    <TooltipProvider delayDuration={0}>
+      <div className="h-svh flex flex-col overflow-hidden ">
       <input
         ref={coverInput}
         type="file"
@@ -642,37 +733,46 @@ export function PostEditor({
       />
 
       {/* ── Top bar ── */}
-      <div className="sticky top-0 z-30 bg-background border-b border-border/10">
+      <div className="sticky top-0 z-30  border-b border-border/10">
         <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-4 flex-1">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back</span>
-            </Link>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Back</TooltipContent>
+            </Tooltip>
 
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Post title"
-              className="max-w-md placeholder:text-muted-foreground/50 placeholder:text-[14px] border-border/60 bg-muted focus-visible:ring-0 text-foreground font-medium px-2 h-8 text-base"
+              className="max-w-md placeholder:text-muted-foreground/50 bg-muted/30 placeholder:text-[14px] border-border/60  focus-visible:ring-0 text-foreground font-medium px-2 h-8 text-base"
             />
 
             {/* Cover image popover */}
             <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
-                  title="Cover Image"
-                >
-                  <ImagePlus className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 bg-background" align="start">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Cover Image</TooltipContent>
+              </Tooltip>
+              <PopoverContent className="w-80 " align="start">
                 <Tabs defaultValue="upload" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 h-7.5">
                     <TabsTrigger value="upload">Upload</TabsTrigger>
@@ -720,7 +820,7 @@ export function PostEditor({
                           <select
                             value={coverFit}
                             onChange={(e) => setCoverFit(e.target.value)}
-                            className="h-6 rounded-md border border-border bg-background px-1.5 text-[10px] text-muted-foreground focus:ring-0"
+                            className="h-6 rounded-md border border-border  px-1.5 text-[10px] text-muted-foreground focus:ring-0"
                           >
                             <option value="cover">Cover</option>
                             <option value="contain">Contain</option>
@@ -782,20 +882,24 @@ export function PostEditor({
                         Upload Image
                       </Button>
                       {coverImage && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setShowCover(!currentShowCover)}
-                          title={
-                            showCover ? "Hide on article" : "Show on article"
-                          }
-                        >
-                          {showCover ? (
-                            <Eye className="h-4 w-4 text-accent" />
-                          ) : (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setShowCover(!currentShowCover)}
+                            >
+                              {showCover ? (
+                                <Eye className="h-4 w-4 text-accent" />
+                              ) : (
+                                <EyeOff className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            {showCover ? "Hide on article" : "Show on article"}
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   </TabsContent>
@@ -841,7 +945,7 @@ export function PostEditor({
                             <select
                               value={coverFit}
                               onChange={(e) => setCoverFit(e.target.value)}
-                              className="h-6 rounded-md border border-border bg-background px-1.5 text-[10px] text-muted-foreground focus:ring-0"
+                              className="h-6 rounded-md border border-border  px-1.5 text-[10px] text-muted-foreground focus:ring-0"
                             >
                               <option value="cover">Cover</option>
                               <option value="contain">Contain</option>
@@ -914,18 +1018,29 @@ export function PostEditor({
               )}
             </span>
 
-            {settings?.previewUrl ? (
+            {settings?.previewUrl && published ? (
               <Link
-                href={`${settings.previewUrl.replace(/\/$/, "")}/blog/${post.slug}${!published ? `?preview=true&key=${settings.apiKey}` : ""}`}
+                href={`${settings.previewUrl.replace(/\/$/, "")}/blog/${post.slug}`}
                 target="_blank"
                 className={cn(
                   buttonVariants({ variant: "secondary" }),
                   "inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground h-7",
                 )}
               >
-                {published ? "View on Site" : "Preview on Site"}{" "}
-                <ExternalLink className="h-3.5 w-3.5" />
+                View on Site <ExternalLink className="h-3.5 w-3.5" />
               </Link>
+            ) : settings?.previewUrl ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={openPreviewOnSite}
+                disabled={openingPreview}
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground h-7"
+              >
+                {openingPreview ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Preview on Site"}
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
             ) : published ? (
               <Link
                 href={`/blog/${post.slug}`}
@@ -939,36 +1054,63 @@ export function PostEditor({
               </Link>
             ) : null}
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              className="h-7 w-7 shrink-0"
-              title="Post settings"
-            >
-              <SettingsIcon className="h-4 w-4 text-muted-foreground" />
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAiOpen(true)}
-              className="h-7 px-3 text-sm flex items-center gap-1.5 shrink-0"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-accent" /> AI write
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="icon"
-                  title="More Options"
-                  className="h-7 w-7"
+                  onClick={() => setSettingsOpen(true)}
+                  className="h-7 w-7 shrink-0"
                 >
-                  <MoreHorizontal className="h-4 w-4" />
+                  <SettingsIcon className="h-4 w-4 text-muted-foreground" />
                 </Button>
-              </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Post settings</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setAiOpen(true)}
+                  className="h-7 w-7 shrink-0"
+                >
+                  <Sparkles className="h-4 w-4 text-accent" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">AI Write</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={copyExternalArticlePrompt}
+                  className="h-7 w-7 shrink-0 text-muted-foreground"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Copy article prompt</TooltipContent>
+            </Tooltip>
+
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">More Options</TooltipContent>
+              </Tooltip>
               <DropdownMenuContent align="end" className="min-w-48">
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -980,7 +1122,10 @@ export function PostEditor({
                   <span className="flex items-center">
                     <PanelRightOpen className="mr-2 h-4 w-4" /> Preview
                   </span>
-                  <Switch checked={showPreview} className="scale-[0.8] origin-right" />
+                  <Switch
+                    checked={showPreview}
+                    className="scale-[0.8] origin-right"
+                  />
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -992,7 +1137,10 @@ export function PostEditor({
                   <span className="flex items-center">
                     <ListTree className="mr-2 h-4 w-4" /> Table of contents
                   </span>
-                  <Switch checked={showToc} className="scale-[0.8] origin-right" />
+                  <Switch
+                    checked={showToc}
+                    className="scale-[0.8] origin-right"
+                  />
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -1039,238 +1187,31 @@ export function PostEditor({
             </AlertDialog>
 
             {/* Post settings dialog */}
-            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-              <DialogContent className="sm:max-w-[460px] max-h-[85vh] flex flex-col">
-                <DialogHeader>
-                  <DialogTitle>Post Settings</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-5 py-4 overflow-y-auto pr-1">
-                  {/* Author */}
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Author</label>
-                    <Input
-                      value={authorName}
-                      onChange={(e) => setAuthorName(e.target.value)}
-                      placeholder="Author name"
-                    />
-                  </div>
-
-                  {/* Category */}
-                  {(() => {
-                    const PRESET_CATEGORIES = [
-                      "Engineering",
-                      "Research",
-                      "Product",
-                      "Education",
-                      "Tutorials",
-                    ];
-                    const isCustom =
-                      !!category && !PRESET_CATEGORIES.includes(category);
-                    const selectValue = isCustom
-                      ? "__custom__"
-                      : (category ?? "");
-                    return (
-                      <div className="grid gap-2">
-                        <label className="text-sm font-medium">Category</label>
-                        <select
-                          value={selectValue}
-                          onChange={(e) => {
-                            if (e.target.value === "__custom__") {
-                              setCategory("");
-                            } else {
-                              setCategory(e.target.value);
-                            }
-                          }}
-                          className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                        >
-                          <option value="">None</option>
-                          {PRESET_CATEGORIES.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                          <option value="__custom__">Custom…</option>
-                        </select>
-                        {(selectValue === "__custom__" || isCustom) && (
-                          <Input
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                            placeholder="Enter custom category"
-                            autoFocus
-                          />
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Cover image section */}
-                  <div className="grid gap-3">
-                    <label className="text-sm font-medium">Cover Image</label>
-
-                    {coverImage ? (
-                      <>
-                        {/* Live preview with current zoom/pan */}
-                        <div
-                          className={cn(
-                            "relative w-full overflow-hidden rounded-xl border border-border",
-                            coverAspectClass,
-                          )}
-                        >
-                          <CoverPreview
-                            src={coverImage}
-                            fit={coverFit}
-                            zoom={coverZoom}
-                            x={coverX}
-                            y={coverY}
-                            className="h-full w-full"
-                          />
-                        </div>
-
-                        {/* Visibility + size + fit row */}
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setShowCover(!currentShowCover)}
-                            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
-                            title={
-                              showCover ? "Hide on article" : "Show on article"
-                            }
-                          >
-                            {showCover ? (
-                              <>
-                                <Eye className="h-3.5 w-3.5" /> Shown
-                              </>
-                            ) : (
-                              <>
-                                <EyeOff className="h-3.5 w-3.5" /> Hidden
-                              </>
-                            )}
-                          </button>
-                          <select
-                            value={coverSize}
-                            onChange={(e) => setCoverSize(e.target.value)}
-                            disabled={!showCover}
-                            className="h-9 rounded-md border border-border bg-background px-1.5 text-xs disabled:opacity-50"
-                            title="Cover height"
-                          >
-                            <option value="small">S</option>
-                            <option value="medium">M</option>
-                            <option value="large">L</option>
-                          </select>
-                          <select
-                            value={coverFit}
-                            onChange={(e) => setCoverFit(e.target.value)}
-                            disabled={!showCover}
-                            className="h-9 rounded-md border border-border bg-background px-1.5 text-xs disabled:opacity-50"
-                            title="Cover fit"
-                          >
-                            <option value="cover">Cover</option>
-                            <option value="contain">Contain</option>
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => coverInput.current?.click()}
-                            disabled={coverUploading}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
-                            aria-label="Replace cover"
-                            title="Replace image"
-                          >
-                            {coverUploading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <ImagePlus className="h-4 w-4" />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCoverImage(null);
-                              setShowCover(false);
-                            }}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-destructive"
-                            aria-label="Remove cover"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-
-                        {/* ── Zoom + Pan sliders ── */}
-                        <div className="rounded-lg border border-border bg-muted/30 p-3 flex flex-col gap-3">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            Zoom &amp; Position
-                          </p>
-
-                          <ControlSlider
-                            label="Zoom"
-                            value={coverZoom}
-                            min={1}
-                            max={3}
-                            step={0.05}
-                            display={`${Math.round(coverZoom * 100)}%`}
-                            onChange={setCoverZoom}
-                            disabled={!showCover}
-                          />
-                          <ControlSlider
-                            label="Horizontal"
-                            value={coverX}
-                            min={0}
-                            max={100}
-                            step={1}
-                            display={`${coverX}%`}
-                            onChange={setCoverX}
-                            disabled={!showCover}
-                          />
-                          <ControlSlider
-                            label="Vertical"
-                            value={coverY}
-                            min={0}
-                            max={100}
-                            step={1}
-                            display={`${coverY}%`}
-                            onChange={setCoverY}
-                            disabled={!showCover}
-                          />
-
-                          {/* Reset button */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCoverZoom(1);
-                              setCoverX(50);
-                              setCoverY(50);
-                            }}
-                            className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline hover:text-foreground"
-                          >
-                            Reset zoom &amp; position
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => coverInput.current?.click()}
-                        disabled={coverUploading}
-                        className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-dashed border-border text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                      >
-                        {coverUploading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <ImagePlus className="h-4 w-4" />
-                        )}
-                        Upload Cover Image
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <PostSettingsModal
+              open={settingsOpen}
+              onOpenChange={setSettingsOpen}
+              onSave={doSave}
+              uploadImage={uploadRawImage}
+              store={{
+                authorName, setAuthorName,
+                category, setCategory,
+                coverImage, setCoverImage,
+                showCover, setShowCover,
+                coverSize, setCoverSize,
+                coverFit, setCoverFit,
+                coverZoom, setCoverZoom,
+                coverX, setCoverX,
+                coverY, setCoverY,
+              }}
+            />
 
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              title="Save"
               onClick={doSave}
               disabled={busy}
-              className="px-1!"
+              className="h-7 w-7 shrink-0"
             >
               {saveState === "saving" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1303,7 +1244,7 @@ export function PostEditor({
           <div className="flex-1 overflow-y-auto">
             <div className="mx-auto max-w-4xl px-4 pb-6 pt-1 sm:px-8">
               <div className="min-w-0 flex flex-col gap-2">
-                <div className="sticky top-0 z-10 bg-background pb-2 pt-2">
+                <div className="sticky top-0 z-10  pb-2 pt-2">
                   <EditorToolbar
                     editor={editor}
                     lineSpacing={lineSpacing}
@@ -1332,8 +1273,8 @@ export function PostEditor({
               minSize={30}
               className="bg-transparent"
             >
-              <div className="h-full w-full rounded-tl-xl border border-border/50 bg-[#FAFAFA] shadow-sm flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between border-b border-border/50 bg-[#FAFAFA] px-4 py-3 relative">
+              <div className="h-full w-full rounded-tl-xl border border-border/50 bg-secondary/90 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between border-b border-border/50  px-4 py-3 relative">
                   <div />
                   <div className="flex flex-col items-start w-full pl-3 absolute left-1/2 -translate-x-1/2 text-start">
                     <span className="font-semibold text-sm">Preview</span>
@@ -1352,7 +1293,7 @@ export function PostEditor({
                 </div>
 
                 <div
-                  className="flex-1 overflow-y-auto bg-[#FAFAFA] relative"
+                  className="flex-1 overflow-y-auto  relative"
                   style={
                     {
                       "--line-spacing": currentLineSpacing,
@@ -1417,7 +1358,7 @@ export function PostEditor({
                       key={post.id}
                       id="article-body"
                       html={previewHtml}
-                      className="prose-editorial mt-6"
+                      className="prose-editorial mt-6 "
                     />
                   </div>
 
@@ -1461,6 +1402,7 @@ export function PostEditor({
             : [],
         })}
       />
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

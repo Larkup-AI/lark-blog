@@ -27,7 +27,7 @@ export function TocSheet({
   useEffect(() => {
     const article = document.getElementById("article-body");
     if (!article) return;
-    
+
     const checkHeadings = () => {
       const nodes = article.querySelectorAll("h1, h2, h3");
       setHasHeadings(nodes.length > 0);
@@ -36,7 +36,11 @@ export function TocSheet({
     checkHeadings();
 
     const mutationObserver = new MutationObserver(checkHeadings);
-    mutationObserver.observe(article, { childList: true, subtree: true, characterData: true });
+    mutationObserver.observe(article, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
 
     return () => mutationObserver.disconnect();
   }, []);
@@ -50,7 +54,7 @@ export function TocSheet({
           variant="outline"
           size="sm"
           className={cn(
-            "fixed bottom-6 right-4 z-40 gap-2 shadow-lg lg:hidden",
+            "fixed bottom-6 right-4 z-40 gap-2  lg:hidden",
             buttonClassName,
           )}
         >

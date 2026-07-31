@@ -12,7 +12,8 @@
     "ingest-admin": "npx tsx --env-file=.env scripts/ingest-admin.ts"
   },
   "dependencies": {
-    "@ai-sdk/react": "^3.0.195",
+    "@ai-sdk/openai-compatible": "2.0.62",
+    "@ai-sdk/react": "3.0.234",
     "@babel/standalone": "^7.29.7",
     "@hookform/resolvers": "^3.9.1",
     "@larkup/blog-sdk": "file:packages/larkup-blog-sdk",
@@ -62,7 +63,7 @@
     "@tiptap/starter-kit": "^3.23.6",
     "@uploadthing/react": "^7.3.3",
     "@vercel/analytics": "1.6.1",
-    "ai": "^6.0.193",
+    "ai": "6.0.236",
     "autoprefixer": "^10.4.20",
     "better-auth": "^1.6.11",
     "class-variance-authority": "^0.7.1",
