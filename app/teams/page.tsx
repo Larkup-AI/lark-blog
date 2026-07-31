@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 export default async function TeamsPage() {
   const session = await getSession();
   if (!session?.user) redirect("/blogs/sign-in");
-  
+
   const isFullAdminUser = isFullAdmin(session.user);
   if (!isFullAdminUser) {
     redirect("/");
@@ -82,7 +82,7 @@ export default async function TeamsPage() {
                     <TableHead className="rounded-tl-lg!">Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead className="rounded-tr-lg! w-[60px]"></TableHead>
+                    <TableHead className="rounded-tr-lg! w-15"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
