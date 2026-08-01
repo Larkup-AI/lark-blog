@@ -340,6 +340,7 @@ export function PostEditor({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [coverUploading, setCoverUploading] = useState(false);
   const [pasteUploading, setPasteUploading] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [docVersion, setDocVersion] = useState(0);
   const [aiOpen, setAiOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -527,7 +528,7 @@ export function PostEditor({
     if (editor) setPreviewHtml(editor.getHTML());
   }, [editor]);
 
-  const doSave = useCallback(async () => {
+  const doSave = useCallback(async (shouldRefresh = true) => {
     if (!editor) return;
     if (inFlightUploadsRef.current > 0) {
       dirtyRef.current = true;
@@ -572,7 +573,7 @@ export function PostEditor({
       dirtyRef.current = false;
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
-      router.refresh();
+      if (shouldRefresh) router.refresh();
     } catch {
       setSaveState("idle");
     }
@@ -695,11 +696,28 @@ export function PostEditor({
   };
 
   const togglePublish = async () => {
-    await doSave();
+    if (publishing) return;
+
+    const previous = published;
     const next = !published;
-    await setPublished(post.id, next);
     setPublishedState(next);
-    router.refresh();
+    setPublishing(true);
+
+    try {
+      // Keep the optimistic publish state intact until the publish request
+      // succeeds; a save refresh would otherwise briefly restore stale data.
+      await doSave(false);
+      await setPublished(post.id, next);
+      router.refresh();
+    } catch (error) {
+      setPublishedState(previous);
+      toast.error(`Could not ${next ? "publish" : "unpublish"} post`, {
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+      });
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const onDelete = async () => {
@@ -1209,7 +1227,7 @@ export function PostEditor({
               variant="outline"
               size="icon"
               title="Save"
-              onClick={doSave}
+              onClick={() => doSave()}
               disabled={busy}
               className="h-7 w-7 shrink-0"
             >
@@ -1226,8 +1244,13 @@ export function PostEditor({
               className="h-7 px-4!"
               size="default"
               onClick={togglePublish}
+              disabled={publishing}
             >
-              <Globe className="h-4 w-4 mr-0" />{" "}
+              {publishing ? (
+                <Loader2 className="h-4 w-4 mr-0 animate-spin" />
+              ) : (
+                <Globe className="h-4 w-4 mr-0" />
+              )}{" "}
               {published ? "Unpublish" : "Publish"}
             </Button>
           </div>
