@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { settings, posts, user } from "@/lib/db/schema";
+import { posts, user } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { resolveApiKey } from "@/lib/api-keys";
 
 export async function GET(
   req: Request,
@@ -10,22 +11,21 @@ export async function GET(
   try {
     const { slug } = await params;
     const url = new URL(req.url);
-    const includeDrafts = url.searchParams.get("preview") === "true";
-    const apiKey = req.headers.get("x-api-key") || url.searchParams.get("key");
 
-    if (!apiKey) {
-      return NextResponse.json({ error: "Unauthorized: Missing API Key" }, { status: 401 });
+    const key = await resolveApiKey(req);
+    if (!key) {
+      return NextResponse.json(
+        { error: "Unauthorized: missing or invalid API key (send it in the Authorization: Bearer header)" },
+        { status: 401 },
+      );
     }
 
-    const [userSettings] = await db.select().from(settings).where(eq(settings.apiKey, apiKey));
-    
-    if (!userSettings) {
-      return NextResponse.json({ error: "Unauthorized: Invalid API Key" }, { status: 401 });
-    }
+    // Drafts require a secret key; publishable (pk_) keys only ever see published posts.
+    const includeDrafts = url.searchParams.get("preview") === "true" && key.canReadDrafts;
 
-    const [blogOwner] = await db.select({ name: user.name, image: user.image }).from(user).where(eq(user.id, userSettings.userId));
+    const [blogOwner] = await db.select({ name: user.name, image: user.image }).from(user).where(eq(user.id, key.userId));
 
-    let queryConditions = and(eq(posts.userId, userSettings.userId), eq(posts.slug, slug));
+    let queryConditions = and(eq(posts.userId, key.userId), eq(posts.slug, slug));
 
     if (!includeDrafts) {
       queryConditions = and(queryConditions, eq(posts.published, true));

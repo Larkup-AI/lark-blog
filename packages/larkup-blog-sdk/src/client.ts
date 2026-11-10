@@ -23,6 +23,12 @@ export interface Post {
 }
 
 export interface LarkupBlogOptions {
+  /**
+   * Workspace API key. Use a publishable key (`pk_…`) in the browser — it can
+   * only read published posts. Use a secret key (`sk_…`) server-side to also
+   * read drafts (`preview: true`). The key is sent in the Authorization header,
+   * never the query string.
+   */
   apiKey: string;
   studioUrl: string;
 }
@@ -41,6 +47,8 @@ export class LarkupBlogClient {
 
   private get headers() {
     return {
+      // Preferred: Authorization header. x-api-key kept for compatibility.
+      Authorization: `Bearer ${this.apiKey}`,
       "x-api-key": this.apiKey,
       "Content-Type": "application/json",
     };

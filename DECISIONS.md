@@ -86,6 +86,20 @@ companion to `PRODUCT_PLAN.md` (the full multi-phase plan).
   Basic scheduling is MIT core (1 schedule, drafts only); **advanced scheduling**
   (multiple schedules + auto-publish) is EE-gated. `vercel.json` cron added.
 
+- **API keys v2 + strict build (2026-11-10)**: migration `0012` adds `api_key`
+  (workspace-scoped, SHA-256 hashed, `pk_` publishable vs `sk_` secret, revocable).
+  `lib/api-keys.ts` resolves a key from the `Authorization: Bearer` / `x-api-key`
+  header — **query-string `?key=` is no longer accepted** (the old leak). Publishable
+  keys can only read published posts; secret keys can read drafts. Legacy
+  `settings.apiKey` values keep working (treated as secret) until rotated. New
+  Settings → **API keys** panel (`components/settings/api-keys-panel.tsx`,
+  `app/actions/api-keys.ts`); the SDK sends the key in the `Authorization` header.
+  Separately, the TypeScript typing pass is done: `next.config.mjs` no longer sets
+  `typescript.ignoreBuildErrors`, and `pnpm build` runs the checker and passes.
+- **Testing plan (Phase 10)** added to `PRODUCT_PLAN.md` as the last step before
+  1.0: Vitest unit tests, Postgres-backed integration tests, Playwright E2E smoke,
+  and a CI gate — all runnable with zero cloud/EE env. (Not yet implemented.)
+
 ## Scaffolded / planned (not yet implemented)
 
 These are designed and documented but intentionally **not** half-built, to keep
@@ -106,9 +120,9 @@ the app shippable. See `PRODUCT_PLAN.md` for the phased plan.
 
 ## Known debt
 
-- `next.config.mjs` still has `typescript.ignoreBuildErrors: true` — inherited
-  loose `any` usage. Remove after a typing pass.
 - Migration `0009` is hand-written (drizzle-kit `generate` needs a TTY for the
   rename/add prompt); a future `generate` may want a fresh snapshot baseline.
-- SDK API key is still a single key readable via query string — split into
-  publishable/secret before promoting browser use.
+- Migrations `0010`–`0012` are hand-written too, for the same reason.
+- API keys v2 cover read access (`pk_`/`sk_`); **write scopes and per-key expiry**
+  are still TODO (see `PRODUCT_PLAN.md` Phase 8).
+- No automated tests yet — `PRODUCT_PLAN.md` Phase 10 is the plan to add them.

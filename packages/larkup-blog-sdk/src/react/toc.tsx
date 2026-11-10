@@ -9,7 +9,7 @@ export function LarkupToc({
   onNavigate,
   classNames,
 }: {
-  contentRef: React.RefObject<HTMLDivElement>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
   onNavigate?: () => void;
   classNames?: { tocTitle?: string };
 }) {
@@ -129,7 +129,7 @@ export function LarkupToc({
 export function LarkupMobileToc({
   contentRef,
 }: {
-  contentRef: React.RefObject<HTMLDivElement>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const [open, setOpen] = useState(false);
   const [hasHeadings, setHasHeadings] = useState(false);

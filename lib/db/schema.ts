@@ -445,3 +445,45 @@ export const job = pgTable(
 );
 
 export type Job = typeof job.$inferSelect;
+
+/* ------------------------------- API keys (v2) ---------------------------- */
+/**
+ * Workspace-scoped SDK/API keys. Two kinds:
+ *  - `publishable` (`pk_…`): read **published** content only, safe in a browser.
+ *  - `secret` (`sk_…`): can read drafts (`?preview=true`) and (future) write.
+ * Only a SHA-256 hash of the key is stored — the plaintext is shown once at
+ * creation. Legacy single keys in `settings.apiKey` keep working (treated as
+ * secret) until rotated; see `lib/api-keys.ts`.
+ */
+export const apiKey = pgTable(
+  "api_key",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    // The content owner whose posts this key serves (kept = settings.userId so
+    // behaviour matches the legacy single-key API).
+    userId: text("userId").notNull(),
+    name: text("name").notNull().default("API key"),
+    // 'publishable' | 'secret'
+    type: text("type").notNull(),
+    // Non-secret prefix shown in the UI, e.g. "pk_live_a1b2c3".
+    prefix: text("prefix").notNull(),
+    // SHA-256 hex of the full key. Unique so lookups are O(1).
+    keyHash: text("keyHash").notNull().unique(),
+    lastFour: text("lastFour").notNull(),
+    createdByUserId: text("createdByUserId"),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastUsedAt: timestamp("lastUsedAt", { withTimezone: true }),
+    revokedAt: timestamp("revokedAt", { withTimezone: true }),
+  },
+  (table) => [
+    index("api_key_workspace_idx").on(table.workspaceId),
+    index("api_key_hash_idx").on(table.keyHash),
+  ],
+);
+
+export type ApiKey = typeof apiKey.$inferSelect;

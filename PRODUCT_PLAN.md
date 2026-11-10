@@ -59,7 +59,8 @@ ee/                # enterprise code, separate commercial LICENSE
 ```
 
 **0.4 Hygiene**
-- [ ] Fix TS errors and drop `ignoreBuildErrors`.
+- [x] Fix TS errors and drop `ignoreBuildErrors` (2026-11-10). Build runs the
+      TypeScript checker and passes; `next.config.mjs` no longer sets the flag.
 - [ ] Validate env with zod (`@t3-oss/env-nextjs`) so it fails fast with clear messages.
 - [ ] Encrypt secrets at rest (AES-256-GCM with an `ENCRYPTION_KEY` env) for AI keys, storage creds, and SSO secrets.
 - [ ] CI: typecheck, lint, unit tests, Playwright smoke test, Docker build.
@@ -277,8 +278,13 @@ Enterprise:   SSO · SCIM · Custom roles · Audit log · License
 - [ ] Open signup, workspaces, managed S3 storage, plan limits, usage metering (posts, AI tokens,
       storage, API requests).
 - [ ] Billing: Stripe (or Polar/Lemon Squeezy as merchant of record, which handles EU VAT for you).
-- [ ] API keys v2: multiple per workspace, **hashed**, scoped, revocable,
-      `pk_` publishable (read published only, safe in the browser) vs `sk_` secret (drafts, writes).
+- [x] API keys v2 (2026-11-10): multiple per workspace, **hashed** (SHA-256),
+      revocable, `pk_` publishable (read published only, safe in the browser) vs
+      `sk_` secret (drafts). Migration `0012` (`api_key` table), `lib/api-keys.ts`,
+      Settings → **API keys** panel. Keys read from the `Authorization: Bearer` /
+      `x-api-key` header only — **query-string keys removed**. Legacy single keys
+      (`settings.apiKey`) keep working (treated as secret) until rotated.
+      Still TODO: write scopes and per-key expiry.
 - [ ] Rate limiting, CDN caching for public read endpoints, per-workspace webhooks on publish.
 - [ ] Offer "bring your own AI key" on every plan to keep AI costs off your margin.
 
@@ -301,7 +307,50 @@ Order matters: non-technical users get the most value from options **A** and **B
   - `@scope/blog-next`: `<BlogIndex/>`, `<BlogPost/>`, `generateMetadata`, `sitemap()` helpers.
   - Headless theming via CSS variables, plus unstyled mode.
   - Later: Astro, Nuxt, SvelteKit adapters.
-- [ ] SDK must default to **publishable keys**. Remove key-in-query-string.
+- [x] SDK must default to **publishable keys**. Remove key-in-query-string.
+      (2026-11-10) — SDK sends the key in the `Authorization` header; the API no
+      longer accepts `?key=`. Publishable `pk_` keys are the documented default.
+
+---
+
+## Phase 10: Testing (unit + integration) — last step before 1.0
+
+No release is "done" until the critical paths are covered. Keep it Postgres-only
+and runnable in CI with zero cloud/EE env set.
+
+**10.1 Tooling**
+- [ ] **Vitest** for unit tests (fast, native TS/ESM). Add `pnpm test` + `pnpm test:watch`.
+- [ ] **Playwright** for end-to-end smoke tests against a built app + a disposable
+      Postgres (Docker service in CI). Add `pnpm test:e2e`.
+- [ ] Test DB helper: spin up Postgres, run migrations, truncate between tests.
+
+**10.2 Unit tests (pure logic first — highest value, no DB)**
+- [ ] `lib/api-keys.ts`: `generateKey` prefixes (`pk_`/`sk_`), `hashApiKey` stability,
+      `readKeyFromRequest` (Authorization vs x-api-key, **ignores `?key=`**),
+      and `resolveApiKey` permission mapping (publishable ⇒ no drafts; legacy ⇒ secret).
+- [ ] `lib/crypto.ts`: encrypt→decrypt round-trip, `isEncrypted`, plaintext fallback.
+- [ ] `lib/cron/schedule.ts`: cron parsing, next-run, timezone math, presets.
+- [ ] `lib/markdown.ts`: Markdown → Tiptap-JSON/HTML conversion.
+- [ ] `lib/ai/providers.ts`: provider registry + model-list merge/fallback.
+- [ ] `ee/rbac.ts`: `can()` for fixed roles and custom roles (gated vs ungated).
+
+**10.3 Integration tests (API + DB, no network)**
+- [ ] `/api/v1/blogs*`: a `pk_` key returns only published posts and **cannot**
+      read drafts via `?preview=true`; an `sk_` key can; a revoked key → 401;
+      a legacy `settings.apiKey` still works; **no key in query string is accepted**.
+- [ ] Workspace scoping: a key for workspace A never returns workspace B's posts.
+- [ ] `/api/cron/tick`: rejects without `CRON_SECRET`, runs a due schedule when authorized.
+- [ ] `/api/sso/*` and `/api/scim/*`: no-op/401 without a license key; happy path with one.
+- [ ] Setup wizard action: first-run creates owner + default workspace; locked after.
+
+**10.4 E2E smoke (Playwright)**
+- [ ] First-run `/setup` → create owner → land on dashboard.
+- [ ] Create a post, publish it, fetch it through the public API with a `pk_` key.
+- [ ] Create + revoke an API key in Settings.
+
+**10.5 CI gate**
+- [ ] GitHub Actions: `typecheck → lint → unit → integration → e2e → docker build`,
+      all green with **zero cloud/EE env**, required before merge to `main`.
 
 ---
 
@@ -345,6 +394,6 @@ If you'd rather be protected from clones, choose FSL for the studio and keep the
 
 ## Suggested execution order
 
-`0 → 1 → 3.1 (quick perf wins) → 2 → 4 → 3.2/3.3 → 5 → 7 (public launch) → 6 → 8 → 9`
+`0 → 1 → 3.1 (quick perf wins) → 2 → 4 → 3.2/3.3 → 5 → 7 (public launch) → 6 → 8 → 9 → 10 (testing gate before 1.0)`
 
 Each numbered item should be **one PR**. We work through them one at a time and tick the boxes here.

@@ -3,12 +3,10 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  Copy,
   RefreshCw,
   Save,
   Eye,
   EyeOff,
-  Check,
   CheckCircle2,
   Sparkles,
   Plug,
@@ -16,7 +14,6 @@ import {
 import { Settings } from "@/lib/db/schema";
 import {
   updateSettings,
-  generateApiKey,
   verifyLocalModel,
   getProviderModels,
 } from "@/app/actions/settings";
@@ -30,18 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { ApiKeysPanel } from "@/components/settings/api-keys-panel";
 import {
   Tooltip,
   TooltipContent,
@@ -69,7 +56,6 @@ export function SettingsForm({
   const [activeTab, setActiveTab] = useState<"ai" | "connection">("ai");
 
   const [previewUrl, setPreviewUrl] = useState(initialSettings?.previewUrl || "");
-  const [apiKey, setApiKey] = useState(initialSettings?.apiKey || "");
 
   const [provider, setProvider] = useState<ProviderId>(
     normalizeProvider(initialSettings?.aiProvider)
@@ -99,9 +85,6 @@ export function SettingsForm({
   const [isVerified, setIsVerified] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showStudioKey, setShowStudioKey] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
 
   // Seed the model list whenever the provider changes.
   useEffect(() => {
@@ -178,26 +161,6 @@ export function SettingsForm({
     } finally {
       setIsVerifying(false);
     }
-  };
-
-  const handleGenerateKey = async () => {
-    setIsGenerating(true);
-    try {
-      const newKey = await generateApiKey();
-      setApiKey(newKey);
-      toast.success("New API key generated");
-    } catch {
-      toast.error("Failed to generate API key");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const copyToClipboard = () => {
-    if (!apiKey) return;
-    navigator.clipboard.writeText(apiKey);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
@@ -402,87 +365,7 @@ export function SettingsForm({
                 </div>
               </div>
 
-              <div className="border-t border-border pt-6">
-                <h2 className="text-lg font-medium text-foreground">API access</h2>
-                <p className="mb-4 mt-1 text-sm text-muted-foreground">
-                  Use this key with the SDK to fetch your posts. Keep it secret.
-                </p>
-                <div className="space-y-2">
-                  <Label>Studio API key</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        type={showStudioKey ? "text" : "password"}
-                        value={apiKey || "No API key generated yet"}
-                        className="h-10 bg-muted/40 pr-10 font-mono"
-                        onChange={(e) => setApiKey(e.target.value)}
-                        readOnly
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowStudioKey(!showStudioKey)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showStudioKey ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={copyToClipboard}
-                      disabled={!apiKey}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-sm font-medium transition-colors hover:bg-secondary/50 disabled:opacity-50"
-                    >
-                      {isCopied ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={isGenerating}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-sm font-medium transition-colors hover:bg-secondary/50 disabled:opacity-50"
-                        >
-                          <RefreshCw
-                            className={cn("h-4 w-4", isGenerating && "animate-spin")}
-                          />
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {apiKey ? "Revoke & regenerate key?" : "Generate API key?"}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {apiKey
-                              ? "This permanently revokes the current key. Integrations using it will lose access immediately."
-                              : "This creates a new API key for the SDK."}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={handleGenerateKey}
-                            className={
-                              apiKey
-                                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                : undefined
-                            }
-                          >
-                            {apiKey ? "Revoke & generate" : "Generate"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              </div>
+              <ApiKeysPanel />
             </div>
           )}
 

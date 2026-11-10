@@ -541,7 +541,7 @@ function FinishStep({ onDone }: { onDone: () => void }) {
         Your workspace is configured. Head to the dashboard to write your first
         post. You can revisit any provider in Settings.
       </p>
-      <Button className="mt-6" disabled={busy} onClick={() => run(onDone)}>
+      <Button className="mt-6" disabled={busy} onClick={() => run(async () => onDone())}>
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Go to dashboard"}
       </Button>
     </div>
