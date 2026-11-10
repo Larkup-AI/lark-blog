@@ -20,7 +20,7 @@ export default async function SettingsPage() {
     <div className="min-h-svh bg-background ">
       {/* Header */}
       <header className="border-b border-border">
-        <div className="mx-auto flex h-16 max-w-5xl items-center px-6">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <Link
             href="/"
             className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -28,6 +28,20 @@ export default async function SettingsPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Posts
           </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/workspaces"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Workspace
+            </Link>
+            <Link
+              href="/setup"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Providers &amp; setup
+            </Link>
+          </div>
         </div>
       </header>
 

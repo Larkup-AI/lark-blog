@@ -68,10 +68,39 @@ export const auth = betterAuth({
           return { data: user };
         },
         after: async (user) => {
-          const { eq } = await import("drizzle-orm");
+          const { eq, and } = await import("drizzle-orm");
           const { drizzle } = await import("drizzle-orm/node-postgres");
-          const { invitation } = await import("@/lib/db/schema");
+          const { invitation, workspaceMember } = await import(
+            "@/lib/db/schema"
+          );
+          const { randomUUID } = await import("crypto");
           const db = drizzle(pool);
+
+          // Grant workspace membership for any pending workspace invite before
+          // marking the invites accepted.
+          const pending = await db
+            .select()
+            .from(invitation)
+            .where(
+              and(
+                eq(invitation.email, user.email),
+                eq(invitation.status, "pending"),
+              ),
+            );
+
+          for (const invite of pending) {
+            if (!invite.workspaceId) continue;
+            try {
+              await db.insert(workspaceMember).values({
+                id: `wm_${randomUUID().replace(/-/g, "")}`,
+                workspaceId: invite.workspaceId,
+                userId: user.id,
+                role: invite.role === "admin" ? "admin" : "member",
+              });
+            } catch {
+              // Ignore duplicate-membership races.
+            }
+          }
 
           await db
             .update(invitation)

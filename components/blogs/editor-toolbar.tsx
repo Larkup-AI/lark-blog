@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUploadThing } from "@/lib/uploadthing";
+import { uploadViaStorage } from "@/lib/upload-client";
 import { Slider } from "@/components/ui/slider";
 import {
   Popover,
@@ -155,18 +156,33 @@ export function EditorToolbar({
   const onImagePick = async (file: File) => {
     if (!editor) return;
     setUploading(true);
-    const res = await startImage([file]);
-    setUploading(false);
-    const url = res?.[0]?.ufsUrl ?? res?.[0]?.url;
+    let url: string | null | undefined;
+    try {
+      // Try the active storage provider (S3 etc.) first, fall back to UploadThing.
+      url = await uploadViaStorage(file);
+      if (!url) {
+        const res = await startImage([file]);
+        url = res?.[0]?.ufsUrl ?? res?.[0]?.url;
+      }
+    } finally {
+      setUploading(false);
+    }
     if (url) editor.chain().focus().setImage({ src: url }).run();
   };
 
   const onVideoPick = async (file: File) => {
     if (!editor) return;
     setUploading(true);
-    const res = await startVideo([file]);
-    setUploading(false);
-    const url = res?.[0]?.ufsUrl ?? res?.[0]?.url;
+    let url: string | null | undefined;
+    try {
+      url = await uploadViaStorage(file);
+      if (!url) {
+        const res = await startVideo([file]);
+        url = res?.[0]?.ufsUrl ?? res?.[0]?.url;
+      }
+    } finally {
+      setUploading(false);
+    }
     if (url)
       editor
         .chain()

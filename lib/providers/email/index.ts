@@ -36,8 +36,21 @@ export function isEmailEnabled(): boolean {
   return getEmailProvider() !== "none";
 }
 
-function fromAddress(): string {
-  return process.env.EMAIL_FROM || `${brand.name} <noreply@example.com>`;
+/**
+ * DB-aware check used by server actions/UI to decide between email and link
+ * flows. Reads the setup-wizard config first, then falls back to env.
+ */
+export async function isEmailEnabledResolved(): Promise<boolean> {
+  try {
+    const { resolveEmail } = await import("@/lib/app-config");
+    return (await resolveEmail()).provider !== "none";
+  } catch {
+    return isEmailEnabled();
+  }
+}
+
+function fromAddress(from?: string): string {
+  return from || process.env.EMAIL_FROM || `${brand.name} <noreply@example.com>`;
 }
 
 function htmlToText(html?: string): string {
@@ -50,8 +63,19 @@ export async function sendEmail(input: SendEmailInput): Promise<{
   skipped?: boolean;
   error?: string;
 }> {
-  const provider = getEmailProvider();
   const text = input.text ?? htmlToText(input.html);
+
+  // Resolve the active provider + config: setup-wizard (DB) first, env fallback.
+  let provider: EmailProviderId = getEmailProvider();
+  let cfg: Record<string, any> = {};
+  try {
+    const { resolveEmail } = await import("@/lib/app-config");
+    const resolved = await resolveEmail();
+    provider = resolved.provider;
+    cfg = resolved.config;
+  } catch {
+    // Fall back to env-only values below.
+  }
 
   try {
     if (provider === "none") {
@@ -62,9 +86,9 @@ export async function sendEmail(input: SendEmailInput): Promise<{
 
     if (provider === "resend") {
       const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY!);
+      const resend = new Resend(cfg.apiKey || process.env.RESEND_API_KEY!);
       await resend.emails.send({
-        from: fromAddress(),
+        from: fromAddress(cfg.from),
         to: [input.email],
         subject: input.subject,
         html: input.html,
@@ -76,17 +100,19 @@ export async function sendEmail(input: SendEmailInput): Promise<{
 
     // smtp
     const nodemailer = await import("nodemailer");
+    const user = cfg.user ?? process.env.SMTP_USER;
+    const pass = cfg.pass ?? process.env.SMTP_PASS;
     const transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === "true",
-      auth:
-        process.env.SMTP_USER || process.env.SMTP_PASS
-          ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-          : undefined,
+      host: cfg.host || process.env.SMTP_HOST,
+      port: Number(cfg.port || process.env.SMTP_PORT || 587),
+      secure:
+        cfg.secure === true ||
+        cfg.secure === "true" ||
+        process.env.SMTP_SECURE === "true",
+      auth: user || pass ? { user, pass } : undefined,
     });
     await transport.sendMail({
-      from: fromAddress(),
+      from: fromAddress(cfg.from),
       to: input.email,
       subject: input.subject,
       html: input.html,

@@ -2,8 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FileText, ArrowUpRight, PlusIcon } from "lucide-react";
 import { getSession, isAdminEmail } from "@/lib/admin";
+import { getSetupState } from "@/app/actions/setup";
 import { getPaginatedPosts, getPostCounts } from "@/app/actions/posts";
 import { formatDate } from "@/lib/posts";
+import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
 import { DashboardActions } from "@/components/blogs/dashboard-actions";
 import { Metadata } from "next";
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboard(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  // Fresh install with no admin yet → run the setup wizard first.
+  const { hasAdmin } = await getSetupState();
+  if (!hasAdmin) redirect("/setup");
+
   const session = await getSession();
   if (!session?.user) redirect("/blogs/sign-in");
 
@@ -51,6 +57,7 @@ export default async function AdminDashboard(props: {
             <span className="hidden font-mono text-xs uppercase tracking-widest text-muted-foreground sm:inline">
               Blog Studio
             </span>
+            <WorkspaceSwitcher />
           </div>
           <DashboardActions />
         </div>

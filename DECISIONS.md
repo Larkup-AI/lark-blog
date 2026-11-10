@@ -46,19 +46,32 @@ companion to `PRODUCT_PLAN.md` (the full multi-phase plan).
 - **Distribution**: MIT `LICENSE`, `ee/LICENSE` + `ee/license.ts` gate, `README`,
   `.env.example`, `Dockerfile` + `docker-compose.yml` (app + Postgres + MinIO),
   Mintlify `docs/` scaffold, `CONTRIBUTING`, `SECURITY`.
+- **Workspaces / multi-tenancy** (2026-11-10): `workspace` + `workspace_member`
+  tables (owner/admin/member), `workspaceId` on `posts`/`settings`/`invitation`,
+  active-workspace cookie + switcher, `/workspaces` members page, invite-to-workspace
+  (existing user added directly; otherwise invite link/email), migration `0010`
+  with a default-workspace backfill. **Custom layer, not the Better Auth org plugin**
+  (kept the existing invite/auth working; org plugin is a future refactor).
+- **First-run `/setup` wizard** (2026-11-10): tests DB + runs migrations, creates
+  the first admin + default workspace, configures **storage / email / AI** providers
+  at runtime (DB `app_config`, secrets encrypted) overriding env. `app/setup/*`,
+  `app/actions/setup.ts`, `lib/app-config.ts`.
+- **Presigned S3 upload wired into the editor** (2026-11-10): `/api/upload` +
+  `lib/upload-client.ts`, with UploadThing fallback for non-presigned providers.
 
 ## Scaffolded / planned (not yet implemented)
 
 These are designed and documented but intentionally **not** half-built, to keep
 the app shippable. See `PRODUCT_PLAN.md` for the phased plan.
 
-- **Workspaces & multi-tenancy** (Better Auth organization plugin) — prerequisite
-  for teams/RBAC/cloud. Biggest next PR.
-- **First-run `/setup` wizard** replacing `ADMIN_EMAIL`.
 - **EE features**: RBAC/custom roles, SSO (SAML/OIDC), SCIM, audit log — the
-  `ee/license.ts` gate exists; the features do not yet.
+  `ee/license.ts` gate exists; the features do not yet. (A free-core workspace
+  cap + `isEEEnabled("custom-roles")` hook already mark the paid boundary.)
 - **Cron auto-generation**: tables + `/api/cron/tick` worker + Settings UI.
-- **Optimistic image upload** + full presigned S3 wire-up in the editor.
+- **Optimistic image upload** (the presigned path now exists; optimistic UX is next).
+- **Workspace scoping of `post_views` / API keys**; `(workspaceId, slug)` uniqueness;
+  per-workspace `settings` row; a dedicated Settings → Storage/Email panel
+  (the setup wizard covers provider config today).
 - **No-code**: hosted blog (custom domain) + embed script; SDK publishable vs
   secret API keys (`pk_`/`sk_`) and removing key-in-query-string.
 - **Cloud**: billing, usage metering, plan limits.

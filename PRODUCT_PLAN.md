@@ -71,18 +71,29 @@ ee/                # enterprise code, separate commercial LICENSE
 
 Everything later (teams, RBAC, SSO, cloud, API keys) depends on this. Do it first.
 
-**1.1 Multi-tenancy**
-- [ ] Use the Better Auth **organization plugin** (organizations, members, invitations, teams,
-      access control). Replace the custom `invitation` table and the `role` on `user`.
-- [ ] Add `organizationId` to `posts`, `settings`, `post_views`, `api_keys`, `schedules`, ….
-      Slug uniqueness becomes `(organizationId, slug)`.
-- [ ] Workspace switcher in the app shell.
-- [ ] Data migration script so existing single-user installs (Larkup) get a default workspace.
+> **Shipped 2026-11-10** (this phase is largely DONE — see notes). Implementation
+> chose a **lightweight custom workspace layer** instead of swapping in the Better
+> Auth organization plugin, to avoid ripping out the working custom `invitation`
+> table / auth hooks and to keep the build stable. The org plugin remains a valid
+> future refactor; the data model here (`workspace`, `workspace_member`,
+> `workspaceId` on `posts`/`settings`/`invitation`) maps onto it cleanly.
 
-**1.2 First-run setup (replaces `ADMIN_EMAIL`)**
-- [ ] `/setup` runs when no user exists: create the owner account and workspace, then optionally
-      configure AI, storage, and email (all skippable). Lock it after the first owner exists.
-- [ ] `DISABLE_SIGNUP` env for self-hosters. The cloud allows open signup.
+**1.1 Multi-tenancy** — ✅ core done
+- [x] Workspace data model: `workspace` + `workspace_member` tables (roles: owner/admin/member),
+      migration `0010_add_workspaces_and_app_config.sql`. *(Custom layer, not the org plugin — see note above.)*
+- [x] Added `workspaceId` to `posts`, `settings`, `invitation`. Posts are scoped to the active
+      workspace (`lib/workspace.ts` + `postScope()` in `app/actions/posts.ts`).
+- [x] Workspace switcher in the app shell (`components/workspace/workspace-switcher.tsx`) + a
+      members/roles management page (`/workspaces`).
+- [x] Data migration backfills a default workspace for existing installs and attaches all users/posts/settings.
+- [ ] Still TODO: scope `post_views`, API keys and (future) `schedules` by workspace; make slug
+      uniqueness `(workspaceId, slug)`; per-workspace `settings` row (currently per-user).
+
+**1.2 First-run setup (replaces `ADMIN_EMAIL`)** — ✅ done
+- [x] `/setup` wizard runs when no admin exists: test DB + run migrations, create the owner account
+      and default workspace, then configure storage / email / AI. Locked to admins after the first owner exists.
+      (`app/setup/*`, `app/actions/setup.ts`.)
+- [ ] `DISABLE_SIGNUP` env for self-hosters (flag exists in `lib/config`; not yet enforced in auth).
 
 **1.3 Email is optional**
 - [ ] Email adapter interface: `resend | smtp (nodemailer) | none`.
@@ -103,17 +114,14 @@ Everything later (teams, RBAC, SSO, cloud, API keys) depends on this. Do it firs
 - [ ] Optional later: **PGlite** for zero-config local/dev ("try it without a DB").
 - [ ] Run migrations automatically on container start (`migrate` step in the entrypoint).
 
-**2.2 Object storage adapters**
-- [ ] `StorageProvider` interface: `getUploadUrl()` (presigned), `delete()`, `publicUrl()`.
-- [ ] Adapters:
-  - **S3-compatible** (one adapter covers AWS S3, Cloudflare R2, MinIO, Backblaze B2, DO Spaces,
-    Supabase Storage S3 API, Tigris, and any S3-compatible storage from Neon/other providers. Check what they actually offer)
-  - Vercel Blob
-  - UploadThing (keep for existing users)
-  - Local disk (self-host/dev only)
-- [ ] Browser uploads **straight to the bucket via a presigned URL**. The server only signs and
-      records the upload, which makes optimistic uploads easy (Phase 3).
-- [ ] Configured in Settings → Storage (encrypted creds) or via env for self-host.
+**2.2 Object storage adapters** — ✅ mostly done
+- [x] `StorageProvider` interface: `createUpload()` (presigned), `delete()`, `publicUrl()` (`lib/providers/storage`).
+- [x] S3-compatible adapter (AWS S3, R2, MinIO, B2, DO Spaces, Supabase S3, Tigris, Neon Object Storage).
+      Vercel Blob / UploadThing / local kept via their own hooks.
+- [x] Browser uploads **straight to the bucket via a presigned URL** — editor wired through
+      `/api/upload` + `lib/upload-client.ts`, falling back to UploadThing for non-presigned providers.
+- [x] Configurable at runtime from the **setup wizard** (DB-backed `app_config`, creds encrypted),
+      overriding env. Env remains the fallback. *(A dedicated Settings → Storage panel is still TODO; the wizard covers it for now.)*
 
 **2.3 AI providers + model picker**
 - [ ] Provider registry in `packages/ai` using AI SDK providers:

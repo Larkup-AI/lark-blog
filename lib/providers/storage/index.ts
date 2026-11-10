@@ -39,3 +39,33 @@ export function getStorageAdapter(): StorageAdapter | null {
   // vercel-blob / uploadthing / local are handled by their own routes/hooks.
   return null;
 }
+
+/**
+ * Resolve the active storage adapter from the runtime config set in the setup
+ * wizard (DB) first, falling back to environment variables. Returns null for
+ * providers that don't use presigned PUT (uploadthing/vercel-blob/local), which
+ * keep their own routes/hooks. This is the path used by the editor upload API.
+ */
+export async function resolveStorageAdapter(): Promise<StorageAdapter | null> {
+  const { resolveStorage } = await import("@/lib/app-config");
+  const { provider, config } = await resolveStorage();
+  if (provider === "s3") {
+    return createS3Adapter({
+      bucket: config.bucket || "",
+      region: config.region,
+      endpoint: config.endpoint,
+      accessKeyId: config.accessKeyId || "",
+      secretAccessKey: config.secretAccessKey || "",
+      publicBaseUrl: config.publicBaseUrl,
+      forcePathStyle:
+        config.forcePathStyle === true || config.forcePathStyle === "true",
+    });
+  }
+  return null;
+}
+
+/** The active storage provider id, DB wizard first then env. */
+export async function resolveStorageProvider(): Promise<StorageProviderId> {
+  const { resolveStorage } = await import("@/lib/app-config");
+  return (await resolveStorage()).provider;
+}

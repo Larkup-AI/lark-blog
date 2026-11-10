@@ -3,9 +3,25 @@
 import { db } from "@/lib/db";
 import { posts, settings } from "@/lib/db/schema";
 import { getAdminUserId, getSession, isFullAdmin, isAdmin } from "@/lib/admin";
-import { and, desc, eq } from "drizzle-orm";
+import { getActiveWorkspaceId } from "@/lib/workspace";
+import { and, desc, eq, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { createHmac } from "crypto";
+
+/**
+ * Build a WHERE clause that scopes posts to the active workspace (and,
+ * optionally, a single author). When there is no active workspace (fresh
+ * install before any workspace exists) scoping falls back to author-only.
+ */
+async function postScope(authorId?: string): Promise<SQL | undefined> {
+  const workspaceId = await getActiveWorkspaceId();
+  const clauses: (SQL | undefined)[] = [];
+  if (workspaceId) clauses.push(eq(posts.workspaceId, workspaceId));
+  if (authorId) clauses.push(eq(posts.userId, authorId));
+  const filtered = clauses.filter(Boolean) as SQL[];
+  if (filtered.length === 0) return undefined;
+  return filtered.length === 1 ? filtered[0] : and(...filtered);
+}
 
 function slugify(input: string) {
   return input
@@ -124,9 +140,8 @@ export async function getPostCounts(authorId?: string) {
     .from(posts)
     .$dynamic();
 
-  if (authorId) {
-    query = query.where(eq(posts.userId, authorId));
-  }
+  const scope = await postScope(authorId);
+  if (scope) query = query.where(scope);
 
   const allPosts = await query.groupBy(posts.published);
 
@@ -157,9 +172,8 @@ export async function getPaginatedPosts(
 
   let query = db.select().from(posts).$dynamic();
 
-  if (authorId) {
-    query = query.where(eq(posts.userId, authorId));
-  }
+  const scope = await postScope(authorId);
+  if (scope) query = query.where(scope);
 
   const data = await query
     .orderBy(desc(posts.updatedAt))
@@ -174,9 +188,8 @@ export async function listAllPosts(authorId?: string) {
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
 
   let query = db.select().from(posts).$dynamic();
-  if (authorId) {
-    query = query.where(eq(posts.userId, authorId));
-  }
+  const scope = await postScope(authorId);
+  if (scope) query = query.where(scope);
 
   return query.orderBy(desc(posts.updatedAt));
 }
@@ -196,10 +209,12 @@ export async function createPost() {
   if (!session?.user || !isAdmin(session.user)) throw new Error("Unauthorized");
 
   const slug = await uniqueSlug(`draft-${Date.now()}`);
+  const workspaceId = await getActiveWorkspaceId();
   const [row] = await db
     .insert(posts)
     .values({
       userId: session.user.id,
+      workspaceId: workspaceId ?? undefined,
       title: "Untitled",
       slug,
       authorName: session.user.name || "Admin",
