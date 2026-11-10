@@ -118,6 +118,9 @@ export const workspaceMember = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     // 'owner' | 'admin' | 'member'. Custom roles are an EE feature.
     role: text("role").notNull().default("member"),
+    // Optional EE custom role (overrides the fixed `role` for permissions).
+    // References `role.id`; null means use the fixed role above. EE-only.
+    customRoleId: text("customRoleId"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
   },
   (table) => [
@@ -234,3 +237,211 @@ export const settings = pgTable("settings", {
 });
 
 export type Settings = typeof settings.$inferSelect;
+
+/* ============================================================================
+ * ENTERPRISE (EE) TABLES
+ * ----------------------------------------------------------------------------
+ * These tables back the commercial `ee/` features (custom roles / RBAC, SSO,
+ * SCIM provisioning, audit log). The tables always exist so the schema is a
+ * single migration set, but the features are gated at runtime by
+ * `ee/license.ts` `isEEEnabled()`. The MIT core never requires them.
+ * Everything is scoped by `workspaceId`.
+ * ==========================================================================*/
+
+/**
+ * EE custom role: a named set of permission statements scoped to a workspace.
+ * The MIT core ships fixed roles (owner/admin/member mapped to
+ * Owner/Admin/Editor/Writer/Viewer capabilities in `ee/rbac.ts`); EE lets an
+ * operator define additional roles and attach them to members
+ * (`workspace_member.customRoleId`).
+ */
+export const role = pgTable(
+  "role",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    // Array of permission strings, e.g. ["post:create","post:publish"].
+    permissions: jsonb("permissions").notNull().default([]),
+    // Built-in roles cannot be deleted/edited from the UI.
+    isSystem: boolean("isSystem").notNull().default(false),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => [index("role_workspace_idx").on(table.workspaceId)],
+);
+
+export type Role = typeof role.$inferSelect;
+
+/**
+ * EE SSO connection (SAML or OIDC) for a workspace. Secrets inside `config`
+ * (client secret, SAML cert/private key) are encrypted at rest via `lib/crypto`
+ * and never returned to the browser. `domain` enables domain-based routing
+ * ("users @acme.com sign in via this connection").
+ */
+export const ssoConnection = pgTable(
+  "sso_connection",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    // 'oidc' | 'saml'
+    type: text("type").notNull(),
+    // Human label, e.g. "Okta", "Azure AD".
+    label: text("label").notNull(),
+    // Email domain that routes to this connection (lowercase, no @).
+    domain: text("domain"),
+    issuer: text("issuer"),
+    // Encrypted JSON: { clientId, clientSecret, authorizationUrl, tokenUrl,
+    // userinfoUrl, jwksUrl } for OIDC; { entryPoint, cert, ... } for SAML.
+    config: jsonb("config").notNull().default({}),
+    enabled: boolean("enabled").notNull().default(false),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => [
+    index("sso_connection_workspace_idx").on(table.workspaceId),
+    index("sso_connection_domain_idx").on(table.domain),
+  ],
+);
+
+export type SsoConnection = typeof ssoConnection.$inferSelect;
+
+/**
+ * EE SCIM provisioning token. The raw token is shown once at creation; only a
+ * SHA-256 hash is stored. Used as a Bearer token on `/api/scim/v2/*` so an IdP
+ * (Okta, Azure AD) can create/deactivate users in a workspace automatically.
+ */
+export const scimToken = pgTable(
+  "scim_token",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // SHA-256 hex of the raw bearer token. Never store the token itself.
+    tokenHash: text("tokenHash").notNull().unique(),
+    lastUsedAt: timestamp("lastUsedAt"),
+    createdBy: text("createdBy").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    expiresAt: timestamp("expiresAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [index("scim_token_workspace_idx").on(table.workspaceId)],
+);
+
+export type ScimToken = typeof scimToken.$inferSelect;
+
+/**
+ * EE audit log: an append-only record of who did what, when. Secrets are never
+ * written here. `metadata` holds non-sensitive context (changed fields, ids).
+ */
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: serial("id").primaryKey(),
+    workspaceId: text("workspaceId"),
+    actorId: text("actorId"),
+    actorEmail: text("actorEmail"),
+    // Dotted action name, e.g. "post.publish", "member.role.update".
+    action: text("action").notNull(),
+    targetType: text("targetType"),
+    targetId: text("targetId"),
+    metadata: jsonb("metadata"),
+    ip: text("ip"),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("audit_log_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt,
+    ),
+    index("audit_log_action_idx").on(table.action),
+  ],
+);
+
+export type AuditLog = typeof auditLog.$inferSelect;
+
+/* ============================================================================
+ * SCHEDULED AUTO-GENERATION (cron) — MIT CORE
+ * ----------------------------------------------------------------------------
+ * `schedule` rows describe recurring AI post generation; `job` rows record each
+ * run. Basic scheduling is MIT core; advanced scheduling (many schedules per
+ * workspace, auto-publish) is gated by the EE `advanced-scheduling` flag.
+ * Scoped by `workspaceId`.
+ * ==========================================================================*/
+
+export const schedule = pgTable(
+  "schedule",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // Standard 5-field cron expression, interpreted in `timezone`.
+    cron: text("cron").notNull(),
+    timezone: text("timezone").notNull().default("UTC"),
+    // The brief the generator is given. One of the topics (if any) is appended.
+    prompt: text("prompt").notNull(),
+    // Optional rotating topic pool (jsonb array of strings).
+    topics: jsonb("topics").notNull().default([]),
+    // Index into `topics` for round-robin selection.
+    topicCursor: integer("topicCursor").notNull().default(0),
+    // Optional model override (provider/model id); null uses workspace default.
+    model: text("model"),
+    // 'short' | 'medium' | 'long' | a custom word count hint.
+    length: text("length").notNull().default("medium"),
+    category: text("category"),
+    // Draft (for review) vs publish immediately. Auto-publish is EE-gated.
+    autoPublish: boolean("autoPublish").notNull().default(false),
+    enabled: boolean("enabled").notNull().default(true),
+    lastRunAt: timestamp("lastRunAt", { withTimezone: true }),
+    nextRunAt: timestamp("nextRunAt", { withTimezone: true }),
+    createdBy: text("createdBy").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => [
+    index("schedule_workspace_idx").on(table.workspaceId),
+    index("schedule_next_run_idx").on(table.enabled, table.nextRunAt),
+  ],
+);
+
+export type Schedule = typeof schedule.$inferSelect;
+
+export const job = pgTable(
+  "job",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId").notNull(),
+    scheduleId: text("scheduleId").references(() => schedule.id, {
+      onDelete: "set null",
+    }),
+    // 'pending' | 'running' | 'success' | 'error'
+    status: text("status").notNull().default("pending"),
+    log: text("log"),
+    postId: integer("postId"),
+    startedAt: timestamp("startedAt", { withTimezone: true }),
+    finishedAt: timestamp("finishedAt", { withTimezone: true }),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("job_workspace_idx").on(table.workspaceId),
+    index("job_schedule_idx").on(table.scheduleId),
+  ],
+);
+
+export type Job = typeof job.$inferSelect;
