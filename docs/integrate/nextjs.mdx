@@ -1,0 +1,21 @@
+---
+title: Next.js
+---
+
+Render your blog with full SSR/SEO:
+
+```tsx
+// app/blog/[slug]/page.tsx
+import { LarkupBlogClient } from "@larkup/blog-sdk";
+import { LarkupArticle } from "@larkup/blog-sdk/react";
+
+const client = new LarkupBlogClient({
+  apiKey: process.env.LARKUP_API_KEY!,
+  studioUrl: process.env.LARKUP_STUDIO_URL!,
+});
+
+export default async function Page({ params }) {
+  const post = await client.getPostBySlug(params.slug);
+  return <LarkupArticle post={post} />;
+}
+```

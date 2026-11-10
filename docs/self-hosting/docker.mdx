@@ -1,0 +1,15 @@
+---
+title: Docker
+---
+
+The provided `docker-compose.yml` runs the app with Postgres and MinIO
+(S3-compatible storage).
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+The image uses Next.js standalone output and runs database migrations on start
+(set `SKIP_MIGRATIONS=true` to skip). Media is stored in MinIO at
+`http://localhost:9000`; its console is on `:9001`.

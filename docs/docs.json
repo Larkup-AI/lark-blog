@@ -1,0 +1,59 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Lark Blog Studio",
+  "colors": {
+    "primary": "#5B5BD6",
+    "light": "#8E8EF0",
+    "dark": "#4040B0"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": ["introduction", "quickstart", "concepts"]
+          },
+          {
+            "group": "Self-hosting",
+            "pages": [
+              "self-hosting/docker",
+              "self-hosting/vercel",
+              "self-hosting/environment",
+              "self-hosting/upgrading"
+            ]
+          },
+          {
+            "group": "Providers",
+            "pages": [
+              "providers/ai",
+              "providers/database",
+              "providers/storage",
+              "providers/email"
+            ]
+          },
+          {
+            "group": "Writing",
+            "pages": ["writing/ai-agent", "writing/scheduling"]
+          },
+          {
+            "group": "Integrate",
+            "pages": ["integrate/sdk", "integrate/nextjs", "integrate/embed", "integrate/api"]
+          },
+          {
+            "group": "Enterprise",
+            "pages": ["enterprise/overview"]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      { "label": "GitHub", "href": "https://github.com/Larkup-AI/lark-blog" }
+    ]
+  }
+}

@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authClient, useSession } from "@/lib/auth-client";
 import { createPost } from "@/app/actions/posts";
+import { ModeToggle } from "@/components/mode-toggle";
 import Link from "next/link";
 
 export function DashboardActions() {
@@ -44,6 +45,7 @@ export function DashboardActions() {
 
   return (
     <div className="flex items-center gap-2">
+      <ModeToggle />
       <Button variant="ghost" size="icon" asChild className="h-8 w-8">
         <Link href="/analytics" aria-label="Analytics">
           <BarChart3 className="h-4 w-4" />

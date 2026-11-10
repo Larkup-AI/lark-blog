@@ -1,0 +1,22 @@
+---
+title: SDK
+---
+
+```bash
+npm install @larkup/blog-sdk
+```
+
+```ts
+import { LarkupBlogClient } from "@larkup/blog-sdk";
+
+const client = new LarkupBlogClient({
+  apiKey: process.env.LARKUP_API_KEY!,
+  studioUrl: "https://your-studio.example.com",
+});
+
+const posts = await client.getPosts();
+const post = await client.getPostBySlug("hello-world");
+```
+
+React bindings (`@larkup/blog-sdk/react`) provide `LarkupProvider`, `usePosts`,
+and `LarkupArticle`.

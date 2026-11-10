@@ -1433,6 +1433,13 @@ export function PostEditor({
           title,
           category,
           isEmpty: editor?.isEmpty ?? true,
+          selection: editor
+            ? editor.state.doc.textBetween(
+                editor.state.selection.from,
+                editor.state.selection.to,
+                "\n",
+              )
+            : "",
           outline: editor
             ? ((editor.getJSON().content ?? []) as any[]).reduce<string[]>(
                 (acc, node) => {

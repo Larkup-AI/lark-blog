@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/posts";
 import { DashboardActions } from "@/components/blogs/dashboard-actions";
 import { Metadata } from "next";
 import { Button } from "@/components/ui/button";
+import { brand } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -29,23 +30,25 @@ export default async function AdminDashboard(props: {
 
   const authorIdFilter = filter === "mine" ? session.user.id : undefined;
 
-  const counts = await getPostCounts(authorIdFilter);
+  // Run independent queries concurrently instead of awaiting them in series.
+  const [counts, posts] = await Promise.all([
+    getPostCounts(authorIdFilter),
+    getPaginatedPosts(page, PAGE_SIZE, authorIdFilter),
+  ]);
   const { total, publishedCount, draftCount } = counts;
-
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const posts = await getPaginatedPosts(page, PAGE_SIZE, authorIdFilter);
 
   return (
     <div className="min-h-svh bg-background">
       {/* Header */}
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-          <div className="flex  gap-1 items-center">
-            <img src={"/logo.png"} className="size-7 " alt="logo" />
+          <div className="flex items-center gap-2">
+            <img src={brand.logo} className="size-7" alt={brand.shortName} />
             <span className="font-serif text-2xl tracking-tight text-foreground">
-              Larkup
+              {brand.shortName}
             </span>
-            <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            <span className="hidden font-mono text-xs uppercase tracking-widest text-muted-foreground sm:inline">
               Blog Studio
             </span>
           </div>

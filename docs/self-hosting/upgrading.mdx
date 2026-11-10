@@ -1,0 +1,12 @@
+---
+title: Upgrading
+---
+
+```bash
+git pull
+pnpm install
+pnpm migrate
+pnpm build && pnpm start   # or redeploy / rebuild the Docker image
+```
+
+Migrations are additive and safe to run repeatedly.

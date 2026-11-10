@@ -1,0 +1,18 @@
+---
+title: REST API
+---
+
+Authenticate with your studio API key via the `x-api-key` header.
+
+```bash
+curl https://your-studio.example.com/api/v1/blogs \
+  -H "x-api-key: lk_..."
+```
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/v1/blogs` | List posts (paginated, filter by category). |
+| `GET /api/v1/blogs/:slug` | Fetch one post. |
+| `GET /api/v1/blogs/categories` | List categories. |
+
+Add `?preview=true` to include drafts (a publishable/secret key split is planned).

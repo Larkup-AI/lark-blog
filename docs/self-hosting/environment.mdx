@@ -1,0 +1,14 @@
+---
+title: Environment variables
+---
+
+See [`.env.example`](https://github.com/Larkup-AI/lark-blog/blob/main/.env.example)
+for the full list. Required to boot:
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | Any Postgres connection string |
+| `BETTER_AUTH_SECRET` | Signs sessions |
+| `ENCRYPTION_KEY` | Encrypts provider keys at rest (falls back to `BETTER_AUTH_SECRET`) |
+
+Everything else (AI, storage, email, branding, deployment mode) is optional.

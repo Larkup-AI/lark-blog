@@ -1,0 +1,10 @@
+---
+title: Vercel
+---
+
+1. Import the repo into Vercel.
+2. Set `DATABASE_URL`, `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`, and optionally an
+   AI key and storage/email vars.
+3. Deploy. Run `pnpm migrate` against your database (locally or a one-off job).
+
+`APP_URL` is auto-detected on Vercel; set it explicitly for a custom domain.

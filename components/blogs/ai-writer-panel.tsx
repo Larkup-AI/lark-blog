@@ -25,6 +25,7 @@ type EditorState = {
   category: string;
   outline: string[];
   isEmpty: boolean;
+  selection?: string;
 };
 
 type AiWriterPanelProps = {
@@ -158,7 +159,52 @@ const TOOL_LABELS: Record<string, string> = {
   insertCallout: "Added callout",
   insertCodeBlock: "Added code block",
   insertDivider: "Added divider",
+  replaceSelection: "Edited selection",
 };
+
+/** Lightweight Markdown → HTML for replacing a selected passage. */
+function markdownToHtmlBlocks(source: string): string {
+  const lines = source.replace(/\r/g, "").split("\n");
+  const blocks: string[] = [];
+  let para: string[] = [];
+  const flush = () => {
+    const t = para.join(" ").trim();
+    if (t) blocks.push(`<p>${inlineMarkdown(t)}</p>`);
+    para = [];
+  };
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line) { flush(); continue; }
+    const h = line.match(/^(#{1,4})\s+(.+)$/);
+    if (h) { flush(); blocks.push(`<h${h[1].length}>${inlineMarkdown(h[2])}</h${h[1].length}>`); continue; }
+    if (/^[-*]\s+/.test(line)) {
+      flush();
+      const items: string[] = [];
+      while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
+        items.push(`<li>${inlineMarkdown(lines[i].trim().replace(/^[-*]\s+/, ""))}</li>`);
+        i += 1;
+      }
+      i -= 1;
+      blocks.push(`<ul>${items.join("")}</ul>`);
+      continue;
+    }
+    if (/^\d+[.)]\s+/.test(line)) {
+      flush();
+      const items: string[] = [];
+      while (i < lines.length && /^\d+[.)]\s+/.test(lines[i].trim())) {
+        items.push(`<li>${inlineMarkdown(lines[i].trim().replace(/^\d+[.)]\s+/, ""))}</li>`);
+        i += 1;
+      }
+      i -= 1;
+      blocks.push(`<ol>${items.join("")}</ol>`);
+      continue;
+    }
+    if (line.startsWith(">")) { flush(); blocks.push(`<blockquote><p>${inlineMarkdown(line.replace(/^>\s?/, ""))}</p></blockquote>`); continue; }
+    para.push(line);
+  }
+  flush();
+  return blocks.join("") || `<p>${inlineMarkdown(source.trim())}</p>`;
+}
 
 export function AiWriterPanel({
   open,
@@ -329,6 +375,23 @@ export function AiWriterPanel({
               appendContent({ type: "horizontalRule" });
               respond("ok");
               break;
+            case "replaceSelection": {
+              const md = String(input.markdown ?? "");
+              if (editor && !editor.state.selection.empty) {
+                editor
+                  .chain()
+                  .focus()
+                  .deleteSelection()
+                  .insertContent(markdownToHtmlBlocks(md))
+                  .run();
+                respond("replaced");
+              } else {
+                // No live selection — append so the work isn't lost.
+                appendContent(markdownToHtmlBlocks(md));
+                respond("no selection; appended instead");
+              }
+              break;
+            }
             default:
               respond("unknown tool");
           }

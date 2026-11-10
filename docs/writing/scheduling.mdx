@@ -1,0 +1,10 @@
+---
+title: Scheduled generation
+---
+
+<Info>Scheduling is on the roadmap (see `DECISIONS.md`). Basic schedules will be
+in the open-source core; approval workflows and content calendars are Enterprise.</Info>
+
+You'll define a cadence, a topic/prompt, a model and whether posts publish
+automatically or land as drafts in a review queue. A `/api/cron/tick` endpoint
+(protected by `CRON_SECRET`) is triggered by Vercel Cron or a Docker sidecar.

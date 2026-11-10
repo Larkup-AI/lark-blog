@@ -1,0 +1,10 @@
+---
+title: Email
+---
+
+Set `EMAIL_PROVIDER` to `resend`, `smtp`, or `none` (inferred if unset).
+
+- **resend** — `RESEND_API_KEY`, `EMAIL_FROM`.
+- **smtp** — `SMTP_HOST/PORT/USER/PASS/SECURE` (`pnpm add nodemailer`).
+- **none** — email disabled. Invites become copyable links and password reset
+  links are logged for an operator to relay. The app stays fully usable.

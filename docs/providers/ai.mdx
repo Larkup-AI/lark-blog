@@ -1,0 +1,17 @@
+---
+title: AI providers
+---
+
+Choose the provider and model in **Settings → AI**. Supported:
+
+| Provider | Notes |
+|---|---|
+| Vercel AI Gateway | One key, every model. Best cloud default. |
+| OpenRouter | One key, 300+ models. |
+| OpenAI / Anthropic / Google / xAI / DeepSeek / Mistral / Groq | Native keys. |
+| Ollama / LM Studio | Local models. May lack tool-calling → Markdown fallback. |
+| Custom | Any OpenAI-compatible `/chat/completions` + `/models` endpoint. |
+
+Keys are encrypted at rest. The model list is fetched live from each provider's
+`/models` endpoint, with a curated fallback. Adding a provider is one entry in
+`lib/ai/providers.ts`.

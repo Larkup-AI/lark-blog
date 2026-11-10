@@ -1,0 +1,32 @@
+Lark Blog Studio Enterprise Edition (EE) License
+=================================================
+
+Copyright (c) 2026 Larkup. All rights reserved.
+
+This license governs the contents of the `/ee` directory ("EE Software"), which
+is SEPARATE from the MIT-licensed open-source core of this repository.
+
+1. Grant for development and testing.
+   You may view, copy, modify, and run the EE Software for the purposes of
+   development, testing, and evaluation, free of charge.
+
+2. Production use requires a license key.
+   Use of the EE Software in production, or to provide a service to third
+   parties, requires a valid, paid license key issued by Larkup. Running the EE
+   features in production without a valid license key is not permitted.
+
+3. No competing service.
+   You may not use the EE Software to offer a commercial product or service that
+   competes with Larkup's hosted offering.
+
+4. Redistribution.
+   You may not redistribute the EE Software except as part of an unmodified
+   fork of this repository that preserves this license.
+
+5. Warranty & liability.
+   The EE Software is provided "as is", without warranty of any kind. Larkup is
+   not liable for any damages arising from its use.
+
+This is a source-available commercial license, not an open-source license. For
+commercial licensing, contact the maintainers. This text is provided as a
+starting point and is NOT legal advice — have a lawyer review it before selling.

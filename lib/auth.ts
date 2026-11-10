@@ -1,21 +1,27 @@
 import { betterAuth } from "better-auth";
 import { pool } from "@/lib/db";
-import { sendEmail } from "@/app/actions/resend";
+import { sendEmail, isEmailEnabled } from "@/lib/providers/email";
+import { getBaseUrl, trustedOrigins as configTrustedOrigins, brand } from "@/lib/config";
 
 export const auth = betterAuth({
   database: pool,
-  baseURL:
-    process.env.BETTER_AUTH_URL ??
-    (process.env.VERCEL
-      ? "https://blog-studio.larkup.de"
-      : "http://localhost:3000"),
+  baseURL: getBaseUrl(),
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
-    sendResetPassword: async ({ user, url, token }, request) => {
+    requireEmailVerification: false,
+    sendResetPassword: async ({ user, url }) => {
+      if (!isEmailEnabled()) {
+        // No email transport configured: log the reset link so an operator can
+        // relay it manually, instead of silently failing.
+        console.warn(
+          `[auth] Email disabled. Password reset link for ${user.email}: ${url}`
+        );
+        return;
+      }
       await sendEmail({
         email: user.email,
-        subject: "Reset your password",
+        subject: `Reset your ${brand.name} password`,
         text: `Click the link to reset your password: ${url}`,
         html: `<p>Click the link to reset your password: <a href="${url}">${url}</a></p>`,
       });
@@ -75,17 +81,11 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: [
-    "https://blog-studio.larkup.de",
-    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
-    ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
-      : []),
-    "http://localhost:3000",
-    "https://localhost:3000",
-  ],
+  trustedOrigins: configTrustedOrigins(),
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
+    // Cache the session in a signed cookie so most requests skip a DB round-trip.
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
   },
 });

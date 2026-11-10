@@ -1,0 +1,14 @@
+---
+title: The AI writing agent
+---
+
+The editor agent works **inside** the document, not in a chat box.
+
+- Ask it to write and it builds the article section by section (headings,
+  paragraphs, lists, callouts, code, quotes).
+- **Select text** and ask it to rewrite, shorten, expand, fix or translate — it
+  replaces your selection with `replaceSelection`.
+- Press **Stop** to abort mid-generation; the request is aborted on the server
+  too, so you stop paying for tokens immediately.
+- Providers without reliable tool-calling fall back to returning Markdown that
+  the editor inserts automatically.

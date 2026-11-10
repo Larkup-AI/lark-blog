@@ -14,3 +14,6 @@ app/tests
 .vercel
 .env*
 dist
+# Build artifacts
+tsconfig.tsbuildinfo
+.vercel

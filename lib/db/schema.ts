@@ -131,7 +131,15 @@ export const settings = pgTable("settings", {
   userId: text("userId").notNull().unique(), // One settings row per user/workspace
   apiKey: text("apiKey").unique(),
   previewUrl: text("previewUrl"),
-  aiProvider: text("aiProvider").notNull().default("vercel"), // 'vercel' or 'custom'
+  // Provider id from the AI registry: 'vercel'/'gateway', 'openai', 'anthropic',
+  // 'google', 'xai', 'deepseek', 'mistral', 'groq', 'openrouter', 'ollama',
+  // 'lmstudio', 'custom'. ('vercel' kept for backwards compatibility == gateway.)
+  aiProvider: text("aiProvider").notNull().default("gateway"),
+  // New multi-provider fields (API key is encrypted at rest via lib/crypto).
+  aiModel: text("aiModel"),
+  aiApiKey: text("aiApiKey"),
+  aiBaseUrl: text("aiBaseUrl"),
+  // Legacy custom-provider fields (still read as a fallback).
   customAiUrl: text("customAiUrl"),
   customAiKey: text("customAiKey"),
   customAiModel: text("customAiModel"),

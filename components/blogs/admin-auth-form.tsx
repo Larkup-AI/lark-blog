@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
+import { brand } from "@/lib/config";
 
 export function AdminAuthForm() {
   const router = useRouter();
@@ -66,7 +67,7 @@ export function AdminAuthForm() {
       <div className="w-full max-w-sm">
         <div className="mb-2 text-center flex items-center justify-center gap-1">
           <span className="font-serif text-3xl tracking-tight text-foreground">
-            Larkup
+            {brand.shortName}
           </span>
           <p className="mt-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Blog Studio
@@ -79,7 +80,7 @@ export function AdminAuthForm() {
           </h1> */}
           <p className="text-sm text-muted-foreground">
             {/* Access the private writing dashboard. */}
-            Sign in to your Larkup-Blog account to continue.
+            Sign in to your {brand.name} account to continue.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">

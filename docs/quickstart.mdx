@@ -1,0 +1,26 @@
+---
+title: Quickstart
+description: Run Lark locally in under five minutes.
+---
+
+## Local
+
+```bash
+git clone https://github.com/Larkup-AI/lark-blog
+cd lark-blog
+pnpm install
+cp .env.example .env   # DATABASE_URL, BETTER_AUTH_SECRET, ENCRYPTION_KEY
+pnpm migrate
+pnpm dev
+```
+
+Open <http://localhost:3000>. The first account becomes the owner.
+
+## Docker
+
+```bash
+cp .env.example .env
+docker compose up -d   # app + Postgres + MinIO on :3000
+```
+
+<Tip>Generate secrets with `openssl rand -base64 32`.</Tip>

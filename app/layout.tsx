@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Newsreader, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
+import { brand } from "@/lib/config";
 import "./globals.css";
 
 const inter = Inter({
@@ -23,14 +25,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Larkup Blog Studio",
-    template: "%s · Blog",
+    default: brand.name,
+    template: `%s · ${brand.shortName}`,
   },
-  description: "Blog CMS System Builyt by Larkup Team",
+  description: brand.description,
 };
 
 export const viewport = {
-  themeColor: "#FFFFFF",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({
@@ -41,12 +46,20 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={` ${inter.variable} ${newsreader.variable} ${geistMono.variable}`}
     >
       <body className="font-sans antialiased bg-background">
-        {children}
-        <Toaster position="bottom-right" />
-        {process.env.NODE_ENV === "production" && <Analytics />}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster position="bottom-right" />
+          {process.env.NODE_ENV === "production" && <Analytics />}
+        </ThemeProvider>
       </body>
     </html>
   );
