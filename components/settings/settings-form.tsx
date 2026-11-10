@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ApiKeysPanel } from "@/components/settings/api-keys-panel";
+import { DomainsPanel } from "@/components/settings/domains-panel";
 import {
   Tooltip,
   TooltipContent,
@@ -366,6 +367,8 @@ export function SettingsForm({
               </div>
 
               <ApiKeysPanel />
+
+              <DomainsPanel />
             </div>
           )}
 

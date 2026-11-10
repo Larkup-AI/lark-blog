@@ -70,7 +70,7 @@ export const auth = betterAuth({
         after: async (user) => {
           const { eq, and } = await import("drizzle-orm");
           const { drizzle } = await import("drizzle-orm/node-postgres");
-          const { invitation, workspaceMember } = await import(
+          const { invitation, workspace, workspaceMember } = await import(
             "@/lib/db/schema"
           );
           const { randomUUID } = await import("crypto");
@@ -88,6 +88,7 @@ export const auth = betterAuth({
               ),
             );
 
+          let grantedMembership = false;
           for (const invite of pending) {
             if (!invite.workspaceId) continue;
             try {
@@ -97,6 +98,7 @@ export const auth = betterAuth({
                 userId: user.id,
                 role: invite.role === "admin" ? "admin" : "member",
               });
+              grantedMembership = true;
             } catch {
               // Ignore duplicate-membership races.
             }
@@ -106,6 +108,42 @@ export const auth = betterAuth({
             .update(invitation)
             .set({ status: "accepted" })
             .where(eq(invitation.email, user.email));
+
+          // Open signup (cloud): a user who joined via no invite gets their own
+          // personal workspace so they land in a usable studio. Self-host users
+          // normally arrive via /setup or an invite, so this only fires when
+          // they truly have no workspace.
+          if (!grantedMembership) {
+            const existing = await db
+              .select({ id: workspaceMember.id })
+              .from(workspaceMember)
+              .where(eq(workspaceMember.userId, user.id))
+              .limit(1);
+            if (existing.length === 0) {
+              const base =
+                (user.name || user.email.split("@")[0] || "workspace")
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/^-+|-+$/g, "") || "workspace";
+              const wsId = `ws_${randomUUID().replace(/-/g, "")}`;
+              try {
+                await db.insert(workspace).values({
+                  id: wsId,
+                  name: user.name ? `${user.name}'s workspace` : "My workspace",
+                  slug: `${base}-${wsId.slice(3, 9)}`,
+                  createdBy: user.id,
+                });
+                await db.insert(workspaceMember).values({
+                  id: `wm_${randomUUID().replace(/-/g, "")}`,
+                  workspaceId: wsId,
+                  userId: user.id,
+                  role: "owner",
+                });
+              } catch {
+                // Non-fatal: the user can create a workspace from the UI.
+              }
+            }
+          }
         },
       },
     },

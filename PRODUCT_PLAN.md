@@ -274,10 +274,18 @@ Enterprise:   SSO · SCIM · Custom roles · Audit log · License
 
 ## Phase 8: Cloud (hosted SaaS)
 
-- [ ] Same codebase, `DEPLOYMENT_MODE=cloud|selfhost`.
-- [ ] Open signup, workspaces, managed S3 storage, plan limits, usage metering (posts, AI tokens,
-      storage, API requests).
-- [ ] Billing: Stripe (or Polar/Lemon Squeezy as merchant of record, which handles EU VAT for you).
+- [x] Same codebase, `DEPLOYMENT_MODE=cloud|selfhost` (`lib/config` `deployment.isCloud()`).
+- [x] Open signup (2026-11-11): `/signup` + `signupEnabled()` (cloud always; self-host
+      honours `DISABLE_SIGNUP`). New users without an invite get a personal workspace
+      auto-created (`lib/auth.ts` after-hook).
+- [x] Plan limits + usage metering (2026-11-11): `lib/plans.ts` (free/pro/team/enterprise),
+      `lib/usage.ts` meters posts / AI tokens / storage / api requests and enforces limits
+      (`enforceLimit` wired into `createPost`; AI tokens metered in `lib/ai/generate.ts`).
+      Migration `0013` (`subscription`, `usage_counter`, `custom_domain`). **No-op on self-host.**
+- [x] Billing: **Stripe** (2026-11-11) — `ee/billing/` (dependency-free REST + manual webhook
+      signature verify), `/api/webhooks/stripe`, checkout + portal server actions, `/billing` UI.
+      Price→plan from `STRIPE_PRICE_PRO`/`STRIPE_PRICE_TEAM`. Provider seam kept for a future MoR.
+      *(Chose Stripe per founder; note: you own tax — enable Stripe Tax. See INTERNAL pricing doc.)*
 - [x] API keys v2 (2026-11-10): multiple per workspace, **hashed** (SHA-256),
       revocable, `pk_` publishable (read published only, safe in the browser) vs
       `sk_` secret (drafts). Migration `0012` (`api_key` table), `lib/api-keys.ts`,
@@ -285,8 +293,11 @@ Enterprise:   SSO · SCIM · Custom roles · Audit log · License
       `x-api-key` header only — **query-string keys removed**. Legacy single keys
       (`settings.apiKey`) keep working (treated as secret) until rotated.
       Still TODO: write scopes and per-key expiry.
-- [ ] Rate limiting, CDN caching for public read endpoints, per-workspace webhooks on publish.
-- [ ] Offer "bring your own AI key" on every plan to keep AI costs off your margin.
+- [x] Rate limiting (2026-11-11): `lib/ratelimit.ts` (Upstash-over-fetch fixed window, no-op
+      without env) applied to the public `/api/v1/blogs` read API. *(CDN caching + per-workspace
+      publish webhooks still TODO.)*
+- [x] Offer "bring your own AI key" on every plan (`byokAllowed: true` on all plans) to keep AI
+      costs off margin. *(Platform AI credits as a metered add-on: metering exists, billing TODO.)*
 
 ---
 
@@ -294,12 +305,17 @@ Enterprise:   SSO · SCIM · Custom roles · Audit log · License
 
 Order matters: non-technical users get the most value from options **A** and **B**.
 
-- **A. Hosted blog (zero code, best SEO)**: render the blog for them at
-  `blog.theirdomain.com` (CNAME, auto TLS) or `theirdomain.com/blog` (reverse-proxy snippets
-  for Vercel/Netlify/Cloudflare). Themes, custom CSS, sitemap, RSS, OG images.
-- **B. Embed script (works on Wix, Webflow, Framer, WordPress, Shopify)**:
-  `<script src=".../embed.js" data-key="pk_...">` + `<div id="blog"></div>`. Easy, but weaker for SEO
-  because it renders client-side. Document this tradeoff.
+- **A. Hosted blog (zero code, best SEO)** — _partial (2026-11-11)_: custom-domain
+  **management** shipped — `lib/custom-domains.ts` + `app/actions/domains.ts` + Settings
+  **Custom domains** panel: add a domain, verify via DNS TXT (DNS-over-HTTPS), and (cloud)
+  auto-register with the **Vercel Domains API** for TLS. Migration `0013` (`custom_domain`).
+  **TODO:** host→workspace routing in middleware so a verified domain serves that workspace's
+  `/blog` (`resolveWorkspaceByHost()` is ready); themes, custom CSS, RSS, OG images.
+- [x] **B. Embed script (works on Wix, Webflow, Framer, WordPress, Shopify)** (2026-11-11):
+  `GET /embed.js` serves a dependency-free `<script>` — `<div id="lark-blog"></div>` +
+  `<script src=".../embed.js" data-key="pk_..." data-target="#lark-blog">`. Renders published
+  posts client-side via the CORS-enabled public API; publishable keys only; optional Powered-by
+  badge. (Weaker SEO than the hosted blog — documented tradeoff.)
 - **C. Platform plugins**: WordPress plugin, Webflow CMS sync, Framer plugin (later, demand-driven).
 - **D. Developers**:
   - `npx create-blog` / `npx <cli> init`: detects Next.js and scaffolds `/blog` + `/blog/[slug]`

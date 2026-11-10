@@ -15,6 +15,7 @@ import { db } from "@/lib/db";
 import { settings, user, workspaceMember } from "@/lib/db/schema";
 import { resolveAiConfig, isAiConfigError } from "@/lib/ai/config";
 import { markdownToContent } from "@/lib/markdown";
+import { incrementUsage } from "@/lib/usage";
 
 export type GenerateInput = {
   workspaceId: string;
@@ -115,11 +116,17 @@ Rules:
 
   const user_prompt = `${input.prompt}${topicLine}${categoryLine}`;
 
-  const { text } = await generateText({
+  const { text, usage } = await generateText({
     model: resolved.model as any,
     system,
     prompt: user_prompt,
   });
+
+  // Cloud: meter AI token usage against the plan (no-op on self-host).
+  const totalTokens = (usage as { totalTokens?: number })?.totalTokens;
+  if (input.workspaceId && typeof totalTokens === "number") {
+    await incrementUsage(input.workspaceId, "ai_tokens", totalTokens).catch(() => {});
+  }
 
   const markdown = stripWrappingFence(text.trim());
   const parsed = markdownToContent(markdown);

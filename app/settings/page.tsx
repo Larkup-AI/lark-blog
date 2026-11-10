@@ -42,6 +42,12 @@ export default async function SettingsPage() {
               Schedules
             </Link>
             <Link
+              href="/billing"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Billing
+            </Link>
+            <Link
               href="/enterprise"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >

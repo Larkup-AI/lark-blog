@@ -55,6 +55,17 @@ export const deployment = {
   },
 } as const;
 
+/**
+ * Whether open (public) sign-up is allowed. Cloud always allows it so anyone can
+ * create a workspace; self-host honours `DISABLE_SIGNUP` (single-tenant installs
+ * set it after the first owner is created via /setup). First-run setup does not
+ * go through this gate.
+ */
+export function signupEnabled(): boolean {
+  if (deployment.isCloud()) return true;
+  return !deployment.disableSignup;
+}
+
 export function trustedOrigins(): string[] {
   const origins = new Set<string>([
     getBaseUrl(),

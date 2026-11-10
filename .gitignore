@@ -1,6 +1,8 @@
 .snowflake/
 .vercel/
 .env
+# Internal-only docs (pricing/margins, agent guide) — never pushed.
+INTERNAL/
 # Environment variables
 .env*.local
 

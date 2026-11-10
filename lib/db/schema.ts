@@ -487,3 +487,98 @@ export const apiKey = pgTable(
 );
 
 export type ApiKey = typeof apiKey.$inferSelect;
+
+/* ------------------------------- Cloud: billing -------------------------- */
+/**
+ * One subscription row per workspace (cloud only). `plan` drives limits
+ * (`lib/plans.ts`); the provider fields link to Stripe/Polar. Self-host never
+ * writes here — it runs unlimited.
+ */
+export const subscription = pgTable(
+  "subscription",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    plan: text("plan").notNull().default("free"),
+    // 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete'
+    status: text("status").notNull().default("active"),
+    provider: text("provider"), // 'stripe' | 'polar'
+    customerId: text("customerId"),
+    subscriptionId: text("subscriptionId"),
+    priceId: text("priceId"),
+    seats: integer("seats").notNull().default(1),
+    cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").notNull().default(false),
+    currentPeriodEnd: timestamp("currentPeriodEnd", { withTimezone: true }),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("subscription_workspace_idx").on(table.workspaceId),
+    index("subscription_customer_idx").on(table.customerId),
+  ],
+);
+
+export type Subscription = typeof subscription.$inferSelect;
+
+/* ------------------------------- Cloud: usage ---------------------------- */
+/**
+ * Monthly usage counters per workspace + metric (cloud only). `period` is
+ * `YYYY-MM` (UTC). Enforced against `lib/plans.ts` limits.
+ */
+export const usageCounter = pgTable(
+  "usage_counter",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    // 'posts' | 'ai_tokens' | 'storage_bytes' | 'api_requests'
+    metric: text("metric").notNull(),
+    period: text("period").notNull(), // YYYY-MM for monthly metrics, 'total' for cumulative
+    value: integer("value").notNull().default(0),
+    updatedAt: timestamp("updatedAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("usage_counter_lookup_idx").on(
+      table.workspaceId,
+      table.metric,
+      table.period,
+    ),
+  ],
+);
+
+export type UsageCounter = typeof usageCounter.$inferSelect;
+
+/* ---------------------------- Cloud: custom domains ---------------------- */
+/**
+ * A custom domain mapped to a workspace's hosted blog (cloud/no-code).
+ * Verified by a DNS TXT record; on cloud the domain is also registered with
+ * the Vercel Domains API.
+ */
+export const customDomain = pgTable(
+  "custom_domain",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspaceId")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    domain: text("domain").notNull().unique(),
+    verified: boolean("verified").notNull().default(false),
+    verificationToken: text("verificationToken").notNull(),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    verifiedAt: timestamp("verifiedAt", { withTimezone: true }),
+  },
+  (table) => [index("custom_domain_workspace_idx").on(table.workspaceId)],
+);
+
+export type CustomDomain = typeof customDomain.$inferSelect;

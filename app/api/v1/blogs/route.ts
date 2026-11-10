@@ -3,6 +3,20 @@ import { db } from "@/lib/db";
 import { posts, user } from "@/lib/db/schema";
 import { eq, and, desc, count } from "drizzle-orm";
 import { resolveApiKey } from "@/lib/api-keys";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+
+// Public read API: allow cross-origin reads so the embed script and browser
+// SDK (with a publishable pk_ key) work from any site.
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, x-api-key, Content-Type",
+  "Access-Control-Max-Age": "86400",
+};
+
+export function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS });
+}
 
 export async function GET(req: Request) {
   try {
@@ -15,11 +29,16 @@ export async function GET(req: Request) {
     const limit = typeof limitStr === "string" ? Math.max(1, parseInt(limitStr, 10) || 10) : 10;
     const offset = (page - 1) * limit;
 
+    const rl = await rateLimit(`v1:blogs:${clientIp(req)}`, 120, 60);
+    if (!rl.success) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429, headers: CORS });
+    }
+
     const key = await resolveApiKey(req);
     if (!key) {
       return NextResponse.json(
         { error: "Unauthorized: missing or invalid API key (send it in the Authorization: Bearer header)" },
-        { status: 401 },
+        { status: 401, headers: CORS },
       );
     }
 
@@ -77,7 +96,7 @@ export async function GET(req: Request) {
       authorImage: blogOwner?.image || null
     }));
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       posts: postsWithAuthor,
       pagination: {
         page,
@@ -85,7 +104,7 @@ export async function GET(req: Request) {
         total: totalCount,
         totalPages
       }
-    });
+    }, { headers: CORS });
   } catch (error) {
     console.error("Failed to fetch posts:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

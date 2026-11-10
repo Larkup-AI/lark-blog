@@ -99,6 +99,30 @@ companion to `PRODUCT_PLAN.md` (the full multi-phase plan).
 - **Testing plan (Phase 10)** added to `PRODUCT_PLAN.md` as the last step before
   1.0: Vitest unit tests, Postgres-backed integration tests, Playwright E2E smoke,
   and a CI gate — all runnable with zero cloud/EE env. (Not yet implemented.)
+- **Cloud SaaS (Phases 8–9) (2026-11-11)**: migration `0013` adds `subscription`,
+  `usage_counter`, `custom_domain`. All cloud-only and **no-op on self-host**.
+  - **Plans + limits**: `lib/plans.ts` (free/pro/team/enterprise, `-1`=unlimited);
+    `lib/usage.ts` meters posts / AI tokens / storage / api-requests and enforces
+    limits (`enforceLimit` in `createPost`; AI tokens metered in `lib/ai/generate.ts`).
+    Self-host resolves to an unlimited (enterprise) plan — zero gating.
+  - **Billing — Stripe** (chosen over Polar/Lemon Squeezy MoR; founder's call —
+    tax is on us, enable Stripe Tax). `ee/billing/` is dependency-free (Stripe REST
+    over `fetch` + manual HMAC webhook verification, no `stripe` npm dep), behind a
+    thin provider seam. `/api/webhooks/stripe` upserts the subscription; `/billing`
+    UI does checkout + portal. Prices from `STRIPE_PRICE_PRO`/`STRIPE_PRICE_TEAM`.
+  - **Open signup**: `/signup` gated by `signupEnabled()` (cloud always; self-host
+    honours `DISABLE_SIGNUP`). First-run `/setup` bypasses the gate. New users with
+    no invite get a personal workspace (auth after-hook).
+  - **Rate limiting**: `lib/ratelimit.ts` — Upstash REST fixed-window, no-op without
+    env, fails open, applied to the public read API.
+  - **No-code — embed**: `GET /embed.js` + CORS on `/api/v1/blogs` (publishable keys).
+  - **No-code — custom domains**: `lib/custom-domains.ts` add/verify (DNS TXT via
+    DoH) + Vercel Domains API registration; Settings panel. Host→workspace routing
+    is the remaining wiring.
+  - BYOK is allowed on every plan (`byokAllowed: true`) to keep AI cost off margin.
+  - Pricing/margin analysis + the Stripe-vs-MoR rationale live in the **internal**
+    (gitignored) `INTERNAL/PRICING_AND_MARGINS.md`; agent onboarding in
+    `INTERNAL/AGENT_GUIDE.md`.
 
 ## Scaffolded / planned (not yet implemented)
 

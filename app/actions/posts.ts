@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { posts, settings } from "@/lib/db/schema";
 import { getAdminUserId, getSession, isFullAdmin, isAdmin } from "@/lib/admin";
 import { getActiveWorkspaceId } from "@/lib/workspace";
+import { enforceLimit } from "@/lib/usage";
 import { recordAuditEvent } from "@/ee/audit";
 import { and, desc, eq, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -211,6 +212,10 @@ export async function createPost() {
 
   const slug = await uniqueSlug(`draft-${Date.now()}`);
   const workspaceId = await getActiveWorkspaceId();
+
+  // Cloud: enforce the plan's post limit (no-op on self-host).
+  if (workspaceId) await enforceLimit(workspaceId, "posts");
+
   const [row] = await db
     .insert(posts)
     .values({
