@@ -36,6 +36,18 @@ export default async function SettingsPage() {
               Workspace
             </Link>
             <Link
+              href="/schedules"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Schedules
+            </Link>
+            <Link
+              href="/enterprise"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Enterprise
+            </Link>
+            <Link
               href="/setup"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >

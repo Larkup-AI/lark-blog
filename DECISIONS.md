@@ -58,16 +58,44 @@ companion to `PRODUCT_PLAN.md` (the full multi-phase plan).
   `app/actions/setup.ts`, `lib/app-config.ts`.
 - **Presigned S3 upload wired into the editor** (2026-11-10): `/api/upload` +
   `lib/upload-client.ts`, with UploadThing fallback for non-presigned providers.
+- **EE features (Phase 6)** (2026-11-10): migration `0011` adds `role`,
+  `sso_connection`, `scim_token`, `audit_log` + a `workspace_member.customRoleId`
+  column, all scoped by `workspaceId`.
+  - **RBAC / custom roles** (`ee/rbac.ts`): a permission catalogue + fixed-role
+    mapping (owner/admin/member) that ALWAYS works; `isEEEnabled("custom-roles")`
+    additionally lets a workspace define custom roles and attach them to members.
+    `can(user, workspace, permission)` is enforced in the schedules actions.
+  - **SSO (OIDC)** (`ee/sso.ts`, `/api/sso/login` + `/api/sso/callback/[id]`):
+    full authorization-code flow with discovery; provisions the user and
+    establishes a Better Auth session (`ee/session.ts` reproduces Better Auth's
+    signed-cookie format). SAML connection storage exists; OIDC is the wired path.
+  - **SCIM 2.0** (`ee/scim.ts`, `/api/scim/v2/[...path]`): Bearer-token `/Users`
+    list/create/get/deactivate for IdP provisioning. Tokens stored as SHA-256 hashes.
+  - **Audit log** (`ee/audit.ts`): `recordAuditEvent()` (no-op without the license)
+    wired into post publish/delete, workspace role/member changes, schedules and
+    EE admin actions. Secrets are never recorded.
+  - All EE tables exist in the single migration set; features are gated at runtime
+    so the MIT core runs fully without a `LICENSE_KEY`.
+- **Cron scheduled auto-generation (Phase 5)** (2026-11-10): migration `0011`
+  adds `schedule` + `job`. `/api/cron/tick` (protected by `CRON_SECRET`, fails
+  closed) runs due schedules via a Postgres-only poller — **no pg-boss/Redis**.
+  Generation reuses the AI provider registry (`lib/ai/generate.ts`) and a
+  dependency-free Markdown→Tiptap-JSON/HTML converter (`lib/markdown.ts`); cron
+  parsing/next-run/timezone in `lib/cron/schedule.ts`. Settings → **Schedules**
+  UI (`/schedules`) with presets, topic rotation, run-now and a run history.
+  Basic scheduling is MIT core (1 schedule, drafts only); **advanced scheduling**
+  (multiple schedules + auto-publish) is EE-gated. `vercel.json` cron added.
 
 ## Scaffolded / planned (not yet implemented)
 
 These are designed and documented but intentionally **not** half-built, to keep
 the app shippable. See `PRODUCT_PLAN.md` for the phased plan.
 
-- **EE features**: RBAC/custom roles, SSO (SAML/OIDC), SCIM, audit log — the
-  `ee/license.ts` gate exists; the features do not yet. (A free-core workspace
-  cap + `isEEEnabled("custom-roles")` hook already mark the paid boundary.)
-- **Cron auto-generation**: tables + `/api/cron/tick` worker + Settings UI.
+- **SAML assertion handling**: `sso_connection` stores SAML configs, but the
+  assertion consumer is a stub — OIDC is the wired SSO path for now.
+- **Custom-role assignment UI on the members page**: the `assignMemberRole`
+  action + `customRoleId` exist; the `/workspaces` members UI still edits only
+  the fixed role. (Roles are created/managed on `/enterprise`.)
 - **Optimistic image upload** (the presigned path now exists; optimistic UX is next).
 - **Workspace scoping of `post_views` / API keys**; `(workspaceId, slug)` uniqueness;
   per-workspace `settings` row; a dedicated Settings → Storage/Email panel

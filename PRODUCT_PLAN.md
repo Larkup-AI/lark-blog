@@ -197,35 +197,56 @@ Today the tools run on the client and can only **append**. The goal is targeted,
 
 ## Phase 5: Scheduled auto-generation (cron)
 
-- [ ] Tables: `schedules` (cron expr or presets, timezone, prompt/topic pool, model, length,
-      category, **draft vs auto-publish**, enabled) and `jobs` (status, logs, resulting postId).
-- [ ] One endpoint `/api/cron/tick` (protected by `CRON_SECRET`) picks up due schedules and enqueues jobs.
-  - Vercel: Vercel Cron calls it. Docker: a sidecar/worker or system cron calls it.
-  - Queue: **pg-boss** (Postgres-based, no Redis). Alternative: Inngest/Trigger.dev adapters.
-- [ ] Generation runs server-side with the Phase 4 shared tools. It needs a long-running worker
-      (serverless 60s limits). Optional research step (web search tool) and image generation.
-- [ ] Notify on completion (email/webhook/Slack), plus a "Review queue" view for generated drafts.
-- [ ] Settings → Schedules UI with a human-readable preview ("Every Monday 09:00 Europe/Berlin").
+> **Shipped 2026-11-10** — migration `0011` (`schedule` + `job`). Basic scheduling
+> is MIT core; advanced (multiple schedules + auto-publish) is EE-gated.
 
-**Core or EE?** You suggested EE. My view: put **basic scheduling in core**, because it's a strong
-reason for individuals to adopt the product. Put **advanced** parts in EE/Cloud (multiple schedules,
-approval workflows, multi-workspace content calendars, brand-voice training). Cloud can limit usage by plan.
+- [x] Tables: `schedule` (cron expr/presets, timezone, prompt/topic pool + round-robin
+      cursor, model, length, category, **draft vs auto-publish**, enabled, lastRun/nextRun)
+      and `job` (status, logs, resulting postId). Scoped by `workspaceId`.
+- [x] One endpoint `/api/cron/tick` (protected by `CRON_SECRET`, fails closed) picks up due
+      schedules and runs them.
+  - Vercel: `vercel.json` cron calls it (sends `CRON_SECRET` as a Bearer token). Docker: a
+    sidecar / system cron does the same `curl`.
+  - Queue: **none** — a dependency-free Postgres poller (`nextRunAt <= now`), honouring the
+    "Postgres-only, no new deps" rule. (pg-boss remains an option if throughput ever needs it.)
+- [x] Generation runs server-side (`lib/ai/generate.ts`) reusing the AI provider registry, with
+      a long `maxDuration` on the route. Markdown→Tiptap-JSON/HTML via `lib/markdown.ts` (no deps).
+      (Optional research/image steps: future.)
+- [x] Settings → Schedules UI (`/schedules`) with a human-readable preview ("Every Monday 09:00
+      Europe/Berlin"), presets, topic rotation, enable/pause, **run now**, and a run history.
+- [ ] Still TODO: notify on completion (email/webhook/Slack) and a dedicated "Review queue" view.
+
+**Core or EE?** Decided: **basic scheduling in core** (1 schedule, drafts only). **Advanced**
+(multiple schedules + auto-publish) is EE (`advanced-scheduling`). Cloud can limit usage by plan.
 
 ---
 
 ## Phase 6: Enterprise (`ee/`)
 
-- [ ] **RBAC / custom roles / permissions**: Better Auth organization access control
-      (statements like `post:create|edit|publish|delete`, `settings:*`, `members:*`, `apiKeys:*`).
-      Core ships fixed roles (Owner, Admin, Editor, Writer, Viewer). EE adds **custom roles**.
-- [ ] **Team management**: teams inside workspaces, per-team post ownership (core: basic teams).
-- [ ] **SSO**: SAML + OIDC (`@better-auth/sso`), domain verification, enforce SSO, JIT provisioning.
-- [ ] **SCIM** user provisioning.
-- [ ] **Audit log** (who did what, when, with export).
+> **Shipped 2026-11-10** — migration `0011` adds `role`, `sso_connection`,
+> `scim_token`, `audit_log` + `workspace_member.customRoleId`. All features are
+> gated by `ee/license.ts` `isEEEnabled()`; the MIT core works without a key.
+> Implemented as a **custom RBAC layer** (not the Better Auth org plugin) to stay
+> consistent with the existing custom workspace layer (Phase 1).
+
+- [x] **RBAC / custom roles / permissions** (`ee/rbac.ts`): a permission catalogue
+      (`post:*`, `settings:*`, `members:*`, `schedules:*`, `apiKeys:manage`, `audit:read`,
+      `sso:manage`, `scim:manage`, `roles:manage`) with a fixed-role mapping that always works;
+      EE adds **custom roles** (create/edit/delete on `/enterprise`, attach via `customRoleId`).
+      `can()` is enforced in the schedules actions; presets Editor/Writer/Viewer provided.
+- [x] **SSO**: OIDC authorization-code flow with discovery (`ee/sso.ts`, `/api/sso/login` +
+      `/api/sso/callback/[id]`), domain routing, JIT provisioning, session via `ee/session.ts`.
+      SAML config storage present (assertion handler = future). (Not the `@better-auth/sso` plugin.)
+- [x] **SCIM** user provisioning (`ee/scim.ts`, `/api/scim/v2/[...path]`): `/Users`
+      list/create/get/deactivate, Bearer tokens stored hashed.
+- [x] **Audit log** (`ee/audit.ts`): who did what, when; wired into posts, workspace membership,
+      schedules and EE admin actions; viewer on `/enterprise`. (Export = future.)
+- [x] **License key** scaffold: `LICENSE_KEY` env, `isEEEnabled(feature)` helper, and a graceful
+      "upgrade" UI on `/enterprise` when no key is set. (Signature verification is still a TODO in
+      `ee/license.ts` — currently decodes an unverified payload; replace with the bundled public key.)
+- [ ] **Team management**: teams inside workspaces, per-team post ownership.
 - [ ] Security: enforce 2FA, session policies, IP allowlist, data retention, API key scopes/expiry.
 - [ ] Content workflows: review/approval before publish.
-- [ ] **License key**: signed JWT (offline-verifiable with your public key) in `LICENSE_KEY` env,
-      `isEEEnabled(feature)` helper, and a graceful "upgrade" UI when no key is set.
 
 ---
 

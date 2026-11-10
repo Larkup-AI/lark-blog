@@ -23,6 +23,7 @@ import {
   type WorkspaceRole,
 } from "@/lib/workspace";
 import { isEEEnabled } from "@/ee/license";
+import { recordAuditEvent } from "@/ee/audit";
 
 function slugify(input: string) {
   return (
@@ -207,6 +208,16 @@ export async function setMemberRole(
       ),
     );
 
+  await recordAuditEvent({
+    workspaceId,
+    actorId: session.user.id,
+    actorEmail: session.user.email,
+    action: "member.role.update",
+    targetType: "user",
+    targetId: memberUserId,
+    metadata: { role },
+  });
+
   revalidatePath("/workspaces");
   return { ok: true };
 }
@@ -232,6 +243,15 @@ export async function removeMember(workspaceId: string, memberUserId: string) {
         eq(workspaceMember.userId, memberUserId),
       ),
     );
+
+  await recordAuditEvent({
+    workspaceId,
+    actorId: session.user.id,
+    actorEmail: session.user.email,
+    action: "member.remove",
+    targetType: "user",
+    targetId: memberUserId,
+  });
 
   revalidatePath("/workspaces");
   return { ok: true };

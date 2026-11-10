@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { posts, settings } from "@/lib/db/schema";
 import { getAdminUserId, getSession, isFullAdmin, isAdmin } from "@/lib/admin";
 import { getActiveWorkspaceId } from "@/lib/workspace";
+import { recordAuditEvent } from "@/ee/audit";
 import { and, desc, eq, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { createHmac } from "crypto";
@@ -315,6 +316,16 @@ export async function setPublished(id: number, published: boolean) {
   revalidatePath(`/blog/${existing.slug}`);
   revalidatePath("/");
   await notifyFrontendRevalidation(existing.slug);
+
+  await recordAuditEvent({
+    workspaceId: existing.workspaceId ?? (await getActiveWorkspaceId()),
+    actorId: session.user.id,
+    actorEmail: session.user.email,
+    action: published ? "post.publish" : "post.unpublish",
+    targetType: "post",
+    targetId: String(id),
+    metadata: { slug: existing.slug },
+  });
 }
 
 export async function deletePost(id: number) {
@@ -332,4 +343,14 @@ export async function deletePost(id: number) {
   revalidatePath("/");
   revalidatePath("/");
   await notifyFrontendRevalidation(existing.slug);
+
+  await recordAuditEvent({
+    workspaceId: existing.workspaceId ?? (await getActiveWorkspaceId()),
+    actorId: session.user.id,
+    actorEmail: session.user.email,
+    action: "post.delete",
+    targetType: "post",
+    targetId: String(id),
+    metadata: { slug: existing.slug, title: existing.title },
+  });
 }
