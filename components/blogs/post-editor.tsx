@@ -567,7 +567,10 @@ export function PostEditor({
         coverY,
         showToc,
         isMain,
-        content: editor.getJSON(),
+        // ProseMirror attrs are null-prototype objects, which React's server-action
+        // encoder replaces with opaque references, so image src, heading level and
+        // link href never reach the server. Send a plain copy instead.
+        content: JSON.parse(JSON.stringify(editor.getJSON())),
         contentHtml: editor.getHTML(),
       });
       dirtyRef.current = false;
@@ -632,9 +635,31 @@ export function PostEditor({
     docVersion,
   ]);
 
+  // Compare against the values loaded from the post, so that opening an article
+  // does not count as an edit and write it back to the database.
+  const lastMetaRef = useRef<string | null>(null);
   useEffect(() => {
-    dirtyRef.current = true;
+    const s = useEditorStore.getState();
+    if (s.postId !== post.id) return;
+    const meta = JSON.stringify([
+      s.title,
+      s.category,
+      s.authorName,
+      s.coverImage,
+      s.showCover,
+      s.coverSize,
+      s.coverFit,
+      s.coverZoom,
+      s.coverX,
+      s.coverY,
+      s.showToc,
+    ]);
+    if (lastMetaRef.current !== null && lastMetaRef.current !== meta) {
+      dirtyRef.current = true;
+    }
+    lastMetaRef.current = meta;
   }, [
+    post.id,
     title,
     category,
     authorName,
