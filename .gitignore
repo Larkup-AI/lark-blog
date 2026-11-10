@@ -3,6 +3,8 @@
 .env
 # Internal-only docs (pricing/margins, agent guide) — never pushed.
 INTERNAL/
+# Private running TODO — never pushed.
+TODO.md
 # Environment variables
 .env*.local
 
